@@ -1,0 +1,1976 @@
+     1	<!DOCTYPE html>
+     2	<html lang="de">
+     3	<head>
+     4		<meta charset="UTF-8">
+     5		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+     6		<title>Function Plotter Wit v083 dev</title>
+     7		<style>
+     8			:root {
+     9				--accent: #00AA00;
+    10				--accent-glow: rgba(0, 170, 0, 0.3);
+    11			}
+       
+    12			body {
+    13				font-family: 'Segoe UI', Tahoma, sans-serif;
+    14				transition: background-color 0.3s, color 0.3s;
+    15				background-color: #ffffff;
+    16				margin: 0;
+    17				overflow: hidden;
+    18				height: 100vh;
+    19				width: 100vw;
+    20			}
+       
+    21			body.dark-mode {
+    22				background-color: #000000;
+    23				color: #FFFF00; /* Default text color for Help in dark mode */
+    24				--accent: #00FF00;
+    25				--accent-glow: rgba(0, 255, 0, 0.5);
+    26			}
+       
+    27			/* Main Layout */
+    28			.main-layout {
+    29				display: flex;
+    30				height: 100vh;
+    31				width: 100vw;
+    32			}
+       
+       
+    33			/* Sidebar */
+    34			.sidebar {
+    35				width: 420px;
+    36				display: flex;
+    37				flex-direction: column;
+    38				caret-color: #FF0000;
+    39				border-right: 1px solid #888;
+    40				background: #f9f9f9;
+    41			}
+    42			body.dark-mode .sidebar { background: #0a0a0a; caret-color: #00ff00; border-color: var(--accent); }
+       
+    43			/* Tab System */
+    44			.tab-system { display: flex; background: #ddd; border-bottom: 1px solid #888; }
+    45			body.dark-mode .tab-system { background: #222; }
+       
+    46			.tab-btn {
+    47				flex: 1; padding: 14px; border: none; background: none; cursor: pointer;
+    48				font-weight: bold; color: #666; transition: 0.2s; font-size: 11px;
+    49				text-transform: uppercase; letter-spacing: 1px;
+    50			}
+    51			.tab-btn.active {
+    52				background: #f9f9f9;
+    53				color: var(--accent);
+    54				border-bottom: 3px solid var(--accent);
+    55			}
+    56			body.dark-mode .tab-btn.active { background: #0a0a0a; }
+       
+    57			.tab-content {
+    58				flex: 1;
+    59				display: none;
+    60				flex-direction: column;
+    61				padding: 15px;
+    62				overflow-y: auto;
+    63				background: inherit;
+    64			}
+    65			.tab-content.active { display: flex; }
+       
+    66			/* Unified Script Editor & Help Viewer */
+    67			.script-area,
+    68			.doc-view {
+    69				flex: 1;
+    70				font-family: 'Consolas', 'Courier New', monospace;
+    71				font-size: 16px;
+    72				line-height: 1.6;
+    73				border-radius: 4px;
+    74				border: 1px solid #ccc;
+    75				padding: 12px;
+    76				outline: none;
+    77				resize: none;
+    78				background: #fff;
+    79				color: #000;
+    80			}
+       
+    81			body.dark-mode .script-area {
+    82				background: #151515;
+    83				color: #FFFFFF;
+    84				border-color: #333;
+    85			}
+       
+    86			body.dark-mode .doc-view {
+    87				background: #151515;
+    88				color: #FFFF00;
+    89				border-color: #333;
+    90			}
+       
+    91			/* Technical Badges in Help */
+    92			#keyword-list code, .doc-view code {
+    93				background: rgba(255, 255, 0, 0.1);
+    94				color: inherit;
+    95				padding: 2px 5px;
+    96				border-radius: 4px;
+    97				border: 1px solid rgba(255, 255, 0, 0.3);
+    98			}
+       
+       
+    99			/* Day Mode: Subtle Dark Grey */
+   100			.doc-view small { color: #0000ff; }
+       
+   101			/* Night Mode: Subtle Dimmer Yellow */
+   102			body.dark-mode .doc-view small { color: #AAAA00; }
+       
+       
+   103			/* Right Side: Canvas & Status */
+   104			.canvas-panel {
+   105				flex: 1;
+   106				display: flex;
+   107				flex-direction: column;
+   108				overflow: hidden;
+   109			}
+       
+   110			.canvas-container {
+   111				flex: 1;
+   112				display: flex;
+   113				justify-content: center;
+   114				align-items: center;
+   115				position: relative;
+   116				background: #fafafa;
+   117			}
+   118			body.dark-mode .canvas-container { background: #050505; }
+       
+   119			.status-bar {
+   120				/* color: var(--accent); */
+   121				display: flex;
+   122				align-items: center;
+   123				justify-content: space-between;
+   124				padding: 0 20px;
+   125				min-height: 55px;
+   126				background: #eee;
+   127				border-top: 1px solid #888;
+   128				color: var(--accent);
+   129				flex-wrap: wrap;
+   130				overflow: visible;   /* Ensure nothing is clipped */
+   131			}
+   132			body.dark-mode .status-bar { background: #111; border-color: var(--accent); }
+       
+   133			#collabInfo {
+   134				display: flex;
+   135				flex-direction: column;
+   136				align-items: center;
+   137				font-size: 9px;
+   138				width: 100px;
+   139				line-height: 1.1;
+   140				color: #000;
+   141				text-align: center;
+   142				text-transform: uppercase;
+   143				/* order: 2; */
+   144			}
+   145			body.dark-mode #collabInfo { color: #fff; }
+       
+       
+   146			#tContainer {
+   147				width: 128px;
+   148				font-family: 'Courier New', monospace;
+   149				text-align: right;
+   150				font-size: 1.2rem;
+   151				font-weight: bold;
+   152			}
+       
+       
+   153			.nav-left-group, .nav-right-group, .nav-center-group {
+   154				display: flex;
+   155				align-items: center;
+   156				gap: 15px;
+   157			}
+       
+       
+   158			#tInput {
+   159				background: transparent; border: none; color: inherit;
+   160				font-family: inherit; font-size: inherit; width: 80px; outline: none;
+   161			}
+       
+   162			button {
+   163				padding: 6px 14px; cursor: pointer; border-radius: 4px;
+   164				border: 1px solid var(--accent); background: #000; color: #fff; font-weight: bold;
+   165			}
+   166		</style>
+   167	</head>
+   168	<body>
+   169	<div class="main-layout">
+   170		<div class="sidebar">
+   171			<div class="tab-system">
+   172				<button class="tab-btn active" onclick="openTab(0)">SETUP</button>
+   173				<button class="tab-btn" onclick="openTab(1)">FUNCTIONS</button>
+   174				<button class="tab-btn" onclick="openTab(2)">HELP</button>
+   175			</div>
+       
+   176			<div id="tab0" class="tab-content active">
+   177				<textarea id="scriptArea0" class="script-area">
+   178	\bpre
+   179	% mapping: physical
+   180	% mapping: non_distorting
+   181	mapping: fill_canvas
+       
+   182	\def{pi}{Math.PI}
+   183	\def{sin}{Math.sin}
+   184	\def{cos}{Math.cos}
+   185	\def{abs}{Math.abs}
+   186	\def{exp}{Math.exp}
+   187	\def{sqrt}{Math.sqrt}
+       
+   188	animSpeed: [0 5]
+   189	tRange: [1 2*pi]
+   190	loopMode: sweep
+   191	% sweep once normal cycle
+       
+   192	axisXmin: -9
+   193	axisXmax: 9
+   194	axisYmin: -9
+   195	axisYmax: 9
+   196	gridXstep: 1
+   197	gridYstep: 1
+   198	labelsXstep: 1
+   199	labelsYstep: .5
+   200	ordXpos: 0
+   201	absYpos: 0
+   202	xu: 50
+   203	yu: 50
+   204	titleX: Voltage / V
+   205	titleY: Current / mA
+       
+   206	\epre
+   207				</textarea>
+   208			</div>
+   209			<div id="tab1" class="tab-content">
+   210				<textarea id="scriptArea1" class="script-area">
+   211	\bfun
+   212	name: r; term: 5; plot: no
+   213	\efun
+       
+   214	\bfun name: halfcircle_up
+   215	term: sqrt(Math.max(0, r*r - x^2))
+   216	color: yellow; domain: [-5 5]; thickness: 20
+   217	\efun
+       
+   218	\bfun name: halfcircle_down
+   219	term: -1 * halfcircle_up
+   220	domain: [-5 5]; thickness: 10
+   221	color: #AA00AA
+   222	\efun
+       
+   223	\bfun name: a % helper, draw later
+   224	term: x^1 % try x^2 and x^3 ...
+   225	plot: no
+   226	\efun
+       
+   227	\bfun
+   228	name: envelope
+   229	term: exp(-abs(x)/4)
+   230	thickness: 3
+   231	color: #888888
+   232	dash: [8 4]
+   233	domain: [-20 7]
+   234	\efun
+       
+   235	\bfun
+   236	name: signal
+   237	term: envelope(x) * sin(2*x + t)
+   238	thickness: 3
+   239	plot: yes
+   240	color: #00AA00
+   241	\efun
+       
+   242	\bfun
+   243	name: echo
+   244	term: -1*signal(x-.3) + 7
+   245	thickness: 2
+   246	color: #FF00FF
+   247	\efun
+       
+   248	\bfun name: b
+   249	term: 4*signal(a*a)+2
+   250	color: white
+   251	thickness: 2; plot: true
+   252	\efun
+       
+   253	\bfun name: c; term: -1*b
+   254	color: orange; thickness: 1.5
+   255	dash: [6 2]; domain: [-3 8]
+   256	\efun
+       
+   257	\bfun % now plot a
+   258	name: a_with_a_fancy-name;
+   259	term: a; color: red; thickness: 10
+   260	domain: [-1 1.5] \efun
+   261				</textarea>
+   262			</div>
+   263			<div id="tab2" class="tab-content doc-view">
+   264				<h4>Usage Manual</h4>
+   265				<p><strong>SETUP</strong> Define constants and animation behavior. Definitions here replace strings globally in functions.</p>
+   266				<p><strong>LIVEUPDATE</strong> What you type is read instanly, e.g., names and values.</p>
+   267				<p><strong>FUNCTIONS</strong> Create <code>\bfun ... \efun</code> blocks. You can reference previously defined functions by name.</p>
+   268				<p><strong>VARIABLES</strong> <code>x</code> and <code>t</code> are variable and clock parameter for the functions.</p>
+   269				<p><strong>COMMENTS</strong> <code>%</code> starts a comment for the rest of the line.</p>
+   270				<p style="white-space: pre-line"><strong>PARSING</strong> Incomplete or unknown tokens are gracefully ignored (fall back to defaults).
+   271					<code>Key: Value</code> pairs are separated by newline or semicolon <code>;</code>
+   272					Keywords ignore case, e.g., <strong>axisXmin = axisXmin</strong>, function names are casesensitive, i.e., <strong>f &ne; F</strong></p><br>
+       
+   273				<h4>EXAMPLE</h4>
+   274				<code>\bfun name: f1</code><br>
+   275				<code>term: sin(x*5 + t) + sin(x*5.5 + t) - 4</code><br>
+   276				<code>color: red; thickness: 8; dash: [9 6] \efun</code><br>
+       
+   277				<div id="keyword-list"></div>
+       
+   278				<!-- here you can "hide" a button etc. in the HELP tab -->
+   279			</div>
+   280		</div>
+       
+   281		<div class="canvas-panel">
+   282			<div class="canvas-container">
+   283				<canvas id="plotCanvas"></canvas>
+   284			</div>
+       
+   285			<div class="status-bar">
+   286				<div class="nav-left-group">
+   287					<!-- <div id="tContainer" style="border: 1px"> -->
+   288					<div id="tContainer"
+   289						style="border: 2px solid #555;
+   290							padding: 2px 8px; border-radius: 4px;
+   291							display: flex; align-items: center; gap: 5px;">
+   292						<span>t =</span>
+   293						<input type="text" id="tInput" value="0.000">
+   294					</div>
+   295				</div>
+       
+   296				<div class="nav-center-group">
+   297					<label style="font-size: 11px; font-weight: bold;">SPEED</label>
+   298					<input type="range" id="speedSlider" min="0.5" max="5" step="0.001" value="1.5">
+   299				</div>
+       
+       
+   300				<button onclick="plotterInstance.saveSession()">💾 Save File</button>
+       
+   301				<button onclick="document.getElementById('fileLoader').click()">📂 Load File</button>
+   302				<input type="file" id="fileLoader" style="display:none" onchange="plotterInstance.loadSession(event)">
+       
+   303	<!--
+   304				<div id="collabInfo">
+   305					<span>Stefan Witzgall</span>
+   306					<span style="font-weight: medium; margin-top: 2px;">v082 27.02.2026</span>
+   307				</div>
+   308	-->
+   309				<div id="collabInfo" style="display:block"> <!-- use this to hide: style="display:none" -->
+   310					<span>v083</span>
+   311					<span style="font-weight: medium; margin-top: 2px;">01.03.2026, 12h15 CET</span>
+   312				</div>
+       
+       
+   313				<div class="nav-right-group">
+   314					<button id="resetT" title="Reset Time">↺</button>
+   315					<button id="toggleDir" title="Reverse Direction">▶</button> <!-- the Forward Reverse button -->
+   316					<button id="toggleAnim"  title="Start/Stop Animation (SPACEBAR)" style="min-width:130px;
+   317						text-align: center">Start</button>
+   318					<!-- Start Animation/Stop Animation -->
+   319					<button onclick="toggleDarkMode()"  title="Dark/Light Scheme" id="darkToggle">🌙</button>
+   320					<button onclick="hardReset()" title="Reset To Defaults" style="color: yellow; border: 1px solid yellow; background: black; cursor: pointer;">
+   321						Reset
+   322					</button>
+   323				</div>
+   324			</div>
+   325		</div>
+   326	</div>
+       
+   327	<script>
+   328		let isResetting = false;
+   329		class Plotter {
+   330			constructor(canvasId) {
+   331				this.canvas = document.getElementById(canvasId);
+   332				this.ctx = this.canvas.getContext('2d');
+   333				this.functions_dev = [];
+   334				this.systemErrors = [];
+   335				this.functions = [];
+   336				this.definitions = {};
+   337				this.globals = {
+   338					t: 0,
+   339					speed: 1.5,
+   340					tMin: -3.141,
+   341					tMax: 3.141,
+   342					tDir: 1,
+   343					loopMode: 'sweep',
+   344					mapping: 'fill_canvas',
+   345					axis: {
+   346						xMin: -10, xMax: 10,
+   347						yMin: -10, yMax: 10,
+   348						xStep: 1, yStep: 1
+   349					},
+   350					xu: 37.8, // 37.8px = 10mm (hopefully)
+   351					yu: 37.8,
+   352					quiet: false
+   353				};
+       
+       
+   354				this.dynamicVariables = [];
+   355				this.scriptHasChanged = true; // Force the first render to parse
+       
+   356				// State variables for the "Pre-calculated Transform"
+   357				this.currentScaleX = 1;
+   358				this.currentScaleY = 1;
+   359				this.currentOffsetX = 0;
+   360				this.currentOffsetY = 0;
+       
+   361				this.animId = null;
+   362				this.isAnimating = false;
+       
+   363				// The Resize "Gatekeeper"
+   364				window.addEventListener('resize', () => {
+   365					this.resize();
+   366					if (this.globals.loopMode === 'normal') this.render();
+   367				});
+       
+   368				this.resize(); // First attempt
+   369				// Force a re-calculation once the browser finishes layout
+   370				window.addEventListener('load', () => this.resize());
+   371				// This second one catches the CSS after it fully loads
+   372				setTimeout(() => this.resize(), 100);
+       
+   373			} // constructor of class Plotter
+       
+       
+   374			saveSession() {
+   375				const area0 = document.getElementById('scriptArea0').value;
+   376				const area1 = document.getElementById('scriptArea1').value;
+   377				const speed = document.getElementById('speedSlider').value;
+   378				const mode = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+   379				const isRunning = plotterInstance.isAnimating ? 'on' : 'off';
+       
+   380				// Generate Timestamp: YYYY.MM.DD hh:mm:ss
+   381				const now = new Date();
+   382				let ts = `${now.getFullYear()}.${(now.getMonth()+1).toString().padStart(2,'0')}.${now.getDate().toString().padStart(2,'0')} ` +
+   383						   `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+   384				ts = `${now.getDate().toString().padStart(2,'0')}.${(now.getMonth()+1).toString().padStart(2,'0')}.${now.getFullYear()} ` +
+   385						   `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+       
+       
+   386				// Clean the titles to be safe for filenames (remove spaces/special chars)
+   387				const cleanTitle = (str) => str.replace(/[^a-z0-9]/gi, '_').substring(0, 20);
+   388				const titleX = plotterInstance.globals.axis.titleX || 'X';
+   389				const titleY = plotterInstance.globals.axis.titleY || 'Y';
+       
+   390				// Format: 2026-02-21_Voltage_vs_Current.txt
+   391				// const dateStub = now.toISOString().split('T')[0];
+   392				// const prettyName = `${dateStub}_${cleanTitle(titleY)}_vs_${cleanTitle(titleX)}.txt`;
+       
+   393				// Format: plotter_20260221_143857.txt
+   394				const dateStub = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
+   395				const prettyName = `plotter_${dateStub}.txt`;
+       
+   396				// 1. METADATA SECTION
+   397				const metadata = [
+   398					`fileName: ${prettyName}`,
+   399					`creDateTime: ${ts}`,
+   400					`scriptVersion: 0.82`,
+   401					`appearanceMode: ${mode}`,
+   402					`animationSpeed: ${speed}`,
+   403					`animationState: ${isRunning}`,
+   404					`tValue: ${this.globals.t}`,          // Save current value of t
+   405					`tDirection: ${this.globals.tDir}`    // Save current value of tDir, 1 or -1
+   406				].join('\n');
+       
+   407				// 2. MARKERS
+   408				const metaToSetup = `% <----- END of METADATA BEGIN of SETUP ----->`;
+   409				const setupToFun  = `% <----- END of SETUP BEGIN of FUNCTIONS ----->`;
+       
+   410				// 3. ASSEMBLY
+   411				const fullContent = `${metadata}\n${metaToSetup}\n${area0}\n${setupToFun}\n${area1}`;
+       
+   412				// 4. DOWNLOAD
+   413				const blob = new Blob([fullContent], { type: 'text/plain' });
+   414				const a = document.createElement('a');
+   415				a.href = URL.createObjectURL(blob);
+   416				a.download = prettyName;
+   417				// a.download = `plotter_${now.getTime()}.txt`;
+   418				a.click();
+   419				URL.revokeObjectURL(a.href);
+   420			}
+       
+       
+       
+   421			loadSession(event) {
+   422				const file = event.target.files[0];
+   423				if (!file) return;
+       
+   424				const reader = new FileReader();
+   425				reader.onload = (e) => {
+   426					const content = e.target.result;
+   427					const sections = content.split(/% <----- .* ----->/);
+       
+   428					if (sections.length >= 3) {
+   429						const metadataStr = sections[0].trim();
+   430						const setupStr    = sections[1].trim();
+   431						const functionsStr = sections[2].trim();
+       
+   432						// --- 1. FILL SCRIPT AREAS FIRST ---
+   433						// The text MUST be in the DOM before we tell the engine to look at it
+   434						document.getElementById('scriptArea0').value = setupStr;
+   435						document.getElementById('scriptArea1').value = functionsStr;
+       
+   436						// --- 2. APPLY UI STATE FROM METADATA ---
+   437						const getMeta = (key) => {
+   438							const match = metadataStr.match(new RegExp(`${key}:\\s*(.+)`));
+   439							return match ? match[1].trim() : null;
+   440						};
+       
+   441						const mode = getMeta('appearanceMode');
+   442						const speed = getMeta('animationSpeed');
+   443						const tValue = getMeta('tValue');
+   444						const animState = getMeta('animationState');
+   445						const tDirection = getMeta('tDirection');
+       
+   446						const btn = document.getElementById('toggleAnim');
+       
+   447						// Apply Dark Mode
+   448						if (mode === 'dark') document.body.classList.add('dark-mode');
+   449						else document.body.classList.remove('dark-mode');
+       
+   450						// Apply Speed
+   451						if (speed) {
+   452							const slider = document.getElementById('speedSlider');
+   453							if (slider) slider.value = speed;
+   454							plotterInstance.globals.speed = parseFloat(speed);
+   455						}
+       
+   456						// Apply Direction of Time
+   457						if (tDirection) {
+   458							plotterInstance.globals.tDir = parseInt(tDirection) || 1;
+   459						} else {
+   460							plotterInstance.globals.tDir = 1; // Default to Forward
+   461						}
+       
+   462						// --- 3. TRIGGER ENGINE (The New Way) ---
+   463						plotterInstance.scriptHasChanged = true; // Raise the flag!
+   464						plotterInstance.compiledCache = {};      // Clear the math cache
+       
+   465						// ... after setting .value of the textareas ...
+   466						parseAndPlot();
+       
+   467						// Apply Time
+   468						if (tValue) {
+   469							plotterInstance.globals.t = parseFloat(tValue);
+   470						} else {
+   471							// FALLBACK: Use tMin if time is missing in the file
+   472							plotterInstance.globals.t = plotterInstance.globals.tMin || 0;
+   473						}
+       
+   474						// Update the input field
+   475						const tInput = document.getElementById('tInput');
+   476						if (tInput) {
+   477							// Use .value for input fields
+   478							tInput.value = this.globals.t.toFixed(3);
+   479						}
+       
+   480						// Handle Animation State
+   481						if (animState === 'off') {
+   482							plotterInstance.isAnimating = false;
+   483							if (btn) btn.innerText = "◀ ▶";
+   484							if (plotterInstance.animId) {
+   485								cancelAnimationFrame(plotterInstance.animId);
+   486								plotterInstance.animId = null;
+   487							}
+   488							// Force ONE render to show the loaded file immediately
+   489							plotterInstance.render();
+   490						} else if (animState === 'on') {
+   491							plotterInstance.isAnimating = true;
+   492							if (btn) btn.innerText = "⏸";
+   493							if (!plotterInstance.animId) {
+   494								plotterInstance.animate(); // This calls render() internally
+   495							}
+   496						}
+       
+   497					} else {
+   498						console.error("File format not recognized.");
+   499					}
+   500				};
+   501				reader.readAsText(file);
+   502			} // end of loadSession()
+       
+       
+       
+   503			animate(currentTime) {
+   504				const mode = this.globals.loopMode;
+   505				const isAnimMode = ['sweep', 'cycle', 'once'].includes(mode);
+       
+   506				if (this.isAnimating && isAnimMode) {
+   507					this.updateTime();
+       
+   508					// Update the input field
+   509					const tInput = document.getElementById('tInput');
+   510					if (tInput) {
+   511						// Use .value for input fields
+   512						tInput.value = this.globals.t.toFixed(3);
+   513					}
+   514				}
+       
+   515				this.render();
+       
+   516				if (this.isAnimating && isAnimMode) {
+   517					this.animId = requestAnimationFrame(() => this.animate());
+   518				} else {
+   519					this.stop();
+   520				}
+   521			}
+       
+   522			updateTime() {
+   523				// Safety: If mode is not a recognized animation, don't move 't'
+   524				const mode = this.globals.loopMode;
+   525				if (!['sweep', 'cycle', 'once'].includes(mode)) return;
+       
+   526				let delta = 0.01 * this.globals.speed * this.globals.tDir;
+   527				this.globals.t += delta;
+       
+   528				if (this.globals.t > this.globals.tMax || this.globals.t < this.globals.tMin) {
+   529					// Somewhat overdressed, but keep it:
+   530					if (mode === 'sweep') {
+   531						this.globals.tDir *= -1;
+   532						// Clamp to bounds to prevent "stuck" frames
+   533						this.globals.t = Math.max(this.globals.tMin, Math.min(this.globals.tMax, this.globals.t));
+   534					} else if (mode === 'cycle') {
+   535						this.globals.t = this.globals.tMin;
+   536					} else if (mode === 'once') {
+   537						this.globals.t = this.globals.tMin;
+   538						// this.globals.t = this.globals.tMax;
+   539						this.isAnimating = false;
+   540					}
+   541				}
+   542			}
+       
+       
+   543			// Explicit Start
+   544			start() {
+   545				if (this.isAnimating) return; // Prevent multiple loops
+   546				this.isAnimating = true;
+   547				this.animate();
+   548			}
+       
+   549			// Explicit Stop
+   550			stop() {
+   551				this.isAnimating = false;
+   552				if (this.animId) {
+   553					cancelAnimationFrame(this.animId);
+   554					this.animId = null;
+   555				}
+   556			}
+       
+   557			resize() {
+   558				const container = this.canvas.parentElement;
+   559				this.canvas.width = container.clientWidth - 20;
+   560				this.canvas.height = container.clientHeight - 20;
+   561				this.render();
+   562			}
+       
+       
+       
+       
+       
+   563			evalValue(val) {
+   564				if (!val || val.toString().trim() === "") return 0;
+   565				let processed = val.toString();
+       
+       
+   566				Object.keys(this.definitions).forEach(key => {
+   567					// Uses \b (word boundary) to ensure "pi" doesn't match "pim"
+   568					const regex = new RegExp(`\\b${key}\\b`, 'g');
+   569					processed = processed.replace(regex, this.definitions[key]);
+   570				});
+       
+       
+   571				processed = processed.replace(/\^/g, "**");
+       
+   572				try {
+   573					const evaluator = new Function('t', 'Math', `with(Math) { return ${processed}; }`);
+       
+   574					try {
+   575						const result = evaluator(this.globals.t, Math);
+       
+   576						if (isNaN(result)) {
+   577							console.warn(`Math Warning: "${val}" evaluated to NaN.`);
+   578							return NaN; // <--- CHANGE: Return NaN so the Wall can see it
+   579						}
+   580						return result;
+   581					} catch(execError) {
+   582						console.error(`Math Execution Error in "${val}":`, execError.message);
+   583						return NaN; // <--- CHANGE: Return NaN so the Wall can see it
+   584					}
+   585				} catch(compileError) {
+   586					return NaN; // <--- CHANGE: Return NaN so the Wall can see it
+   587				}
+   588			} // end of evalValue
+       
+       
+   589			debugNamingLogic(rawBlocks) {
+   590				console.log("%c--- v0.82 SECURE GATEKEEPER ---", "color: blue; font-weight: bold;");
+       
+   591				// 1. DYNAMIC NO-FLY LIST
+   592				const mathNames = Object.getOwnPropertyNames(Math);
+   593				const userDefNames = Object.keys(this.definitions || {});
+   594				const hardReserved = ['x', 'y', 't', 'pi', 'e', 'trange', 'animspeed'];
+       
+   595				// Create a Set for fast lookup and to ensure uniqueness
+   596				const reserved = new Set([...mathNames, ...userDefNames, ...hardReserved]);
+       
+   597				this.functions_dev = rawBlocks.map((b, i) => {
+   598					const blockNum = i + 1;
+   599					const nameMatch = b.match(/name\s*:\s*([^;\n\r]*)/i);
+   600					const name = nameMatch ? nameMatch[1].trim() : "";
+   601					const isAnon = name === "";
+       
+   602					let status = "ok";
+   603					let internalId = `f${blockNum}${isAnon ? '_anon' : '_named'}`;
+       
+   604					// 2. CHECK FOR FORBIDDEN NAMES
+   605					if (!isAnon && reserved.has(name)) {
+   606						status = "!!! FORBIDDEN !!!";
+       
+   607						// THE LOUD ALARM (Triggers the UI warning wall)
+   608						console.error(`%c SECURITY ALERT: "${name}" is a system keyword or user \def and cannot be used!`, "color: red; font-weight: bold;");
+   609						this.systemErrors.push(`Forbidden Name: "${name}" is a reserved keyword or macro.`);
+       
+   610						// RENAME to prevent the CPU loop even if the user ignores the warning
+   611						internalId = `safe_fn_${name}_${blockNum}`;
+   612					} else if (!isAnon) {
+   613						// If it's a valid custom name, use it!
+   614						internalId = name;
+   615					}
+       
+   616					return {
+   617						blockNum: blockNum,
+   618						originalName: name,
+   619						internalId: internalId,
+   620						rawBlock: b, // Keep the block content for the compiler
+   621						status: status
+   622					};
+   623				});
+       
+   624				console.table(this.functions_dev);
+   625				return this.functions_dev;
+   626			} // end of debugNamingLogic
+       
+       
+   627			parseScript(text) {
+   628				this.systemErrors = [];
+   629				let cleanText = text.replace(/%.*$/gm, "");
+   630				cleanText = cleanText.replace(/[\s;]*;[\s;]*/g, "\n");
+       
+   631				Object.keys(Plotter.CONFIG).forEach(key => {
+   632					// Added 'i' to the regex that injects newlines before keywords
+   633					const re = new RegExp(`([^\\n\\r])(\\b${key}:)`, "gi");
+   634					cleanText = cleanText.replace(re, "$1\n$2");
+   635				});
+       
+   636				cleanText = cleanText.replace(/(\\bpre|\\epre|\\bfun|\\efun)/g, "\n$1\n");
+   637				cleanText = cleanText.split('\n').map(line => line.trim()).filter(line => line.length > 0).join('\n');
+       
+   638				// 1. Find all function blocks
+   639				const blockMatches = [...cleanText.matchAll(/\\bfun([\s\S]*?)\\efun/g)];
+   640				// 2. Extract the content of each block into an array
+   641				const rawBlocksArray = blockMatches.map(m => m[1].trim());
+   642				// 3. Pass that array to the validator
+   643				this.debugNamingLogic(rawBlocksArray);
+       
+       
+   644				this.definitions = {};
+   645				const defMatches = cleanText.matchAll(/\\def\{(\w+)\}\{(.*?)\}/g);
+       
+   646				for (const m of defMatches) {
+   647					let varName = m[1];
+   648					let rawValue = m[2];
+       
+   649					// 1. Handle empty
+   650					if (rawValue.trim() === "") {
+   651						this.definitions[varName] = "0";
+   652						continue;
+   653					}
+       
+   654					// 2. Allow Math functions
+   655					if (rawValue.startsWith("Math.")) {
+   656						this.definitions[varName] = rawValue;
+   657						continue;
+   658					}
+       
+   659					// 3. YOUR AWK REGEX CHECK
+   660					// From GAWK: Effective AWK Programming by Robbins 2021, ch. 10.2.1
+   661					// p. 236 function mystrtonum, I stole the following regex:
+   662					// const floatRegex = /^[-+]?([0-9]+([.][0-9]*([Ee][0-9]+)?)?|([.][0-9]+([Ee][-+]?[0-9]+)?))$/;
+   663					// Expects scientific notation, if any, with decimal point, as in 12.0E5 NOT 12E5
+   664					// More permissive:
+   665					// UPDATED AWK-derived REGEX
+   666					// This allows: 13, 13.0, .13, 13e3, 13.5E-2, etc.
+   667					const floatRegex = /^[+-]?[0-9]*\.?[0-9]+([eE][+-]?[0-9]+)?$/;
+   668					if (!floatRegex.test(rawValue.trim())) {
+   669						console.error(`Invalid numerical definition: \\def{${varName}}{${rawValue}}`);
+   670						this.systemErrors.push(`Invalid definition: \\def{${varName}}{${rawValue}}`);
+   671						this.definitions[varName] = "0"; // Safe default
+   672					} else {
+   673						// It matches the float regex, so it is safe to use
+   674						this.definitions[varName] = rawValue.trim();
+   675					}
+   676				}
+       
+       
+   677				// 2. Set fallback for pi if not defined
+   678				if (!this.definitions['pi']) {
+   679					this.definitions['pi'] = 'Math.PI';
+   680				}
+       
+   681				// 1. Define the Math constants/functions string
+   682				const mathKeys = Object.getOwnPropertyNames(Math)
+   683					.filter(key => typeof Math[key] === 'function' || typeof Math[key] === 'number')
+   684					.join(', ');
+       
+   685				// 2. SECOND: Now that mathKeys exists, filter your definitions
+   686				const forbiddenNames = mathKeys.split(',').map(s => s.trim());
+       
+   687				const macroKeys = Object.entries(this.definitions || {})
+   688					.filter(([key]) => !forbiddenNames.includes(key))
+   689					.map(([key, val]) => `const ${key} = ${val};`)
+   690					.join('\n');
+       
+   691				// 3. THIRD: Proceed to your loops (Pass 3, Pass 5, etc.)
+       
+   692				const preMatch = cleanText.match(/\\bpre([\s\S]*?)\\epre/);
+   693				if (preMatch) {
+   694					const content = preMatch[1];
+       
+   695					const getPreVal = (key, fallback) => {
+   696						// The [^;]* means "anything EXCEPT a semicolon"
+   697						// Added 'i' flag for case-insensitive keyword matching
+   698						const m = content.match(new RegExp(`${key}:\\s*?([^;\\n\\r]*)`, 'i'));
+   699						return m ? m[1].trim() : fallback;
+   700					};
+       
+   701					const getPreArr = (key) => {
+   702						// Added 'i' flag here too
+   703						const m = content.match(new RegExp(`${key}:\\s*\\[(.*?)\\]`, 'i'));
+   704						return m ? m[1].split(/[\s,]+/).filter(x => x).map(v => this.evalValue(v)) : null;
+   705					};
+       
+   706					// 1. Get the range using your existing helper
+   707					const range = getPreArr('tRange');
+       
+   708					// 2. The v0.81 "Health Check"
+   709					// Check if range exists, has 2 parts, and BOTH are valid numbers
+   710					if (range && range.length === 2) {
+   711						// Check if either value is NaN (meaning the math failed or variable is missing)
+   712						if (isNaN(range[0]) || isNaN(range[1])) {
+   713							this.systemErrors.push("tRange Error: Contains undefined variables or invalid math.");
+   714							console.error("PREAMBLE ERROR: tRange contains undefined variables or invalid math.");
+   715							// Fallback to safe values so the engine doesn't loop/crash
+   716							this.globals.tMin = 0;
+   717							this.globals.tMax = 10;
+   718						} else {
+   719							this.globals.tMin = range[0];
+   720							this.globals.tMax = range[1];
+   721						}
+   722					}
+       
+       
+   723					// Overwrite only if present in the preamble
+   724					this.globals.xu = this.evalValue(getPreVal('xu', this.globals.xu));
+   725					this.globals.yu = this.evalValue(getPreVal('yu', this.globals.yu));
+       
+       
+   726					this.globals.loopMode = getPreVal('loopMode', 'normal').toLowerCase();
+   727					this.globals.mapping = getPreVal('mapping', 'fill_canvas').toLowerCase();
+       
+       
+   728					const speed = getPreArr('animSpeed');
+   729					if (speed && speed.length === 2) {
+   730						const slider = document.getElementById('speedSlider');
+   731						if (slider) {
+   732							slider.min = speed[0];
+   733							slider.max = speed[1];
+   734							this.globals.speed = Math.min(Math.max(this.globals.speed, speed[0]), speed[1]);
+   735							slider.value = this.globals.speed;
+   736						}
+   737					}
+       
+       
+   738					// 1. Capture the raw strings for things we want to animate (the "Live" ones)
+   739					this.globals.initialPlotterState = {
+   740						ordXpos:        getPreVal('ordXpos', '0'),
+   741						absYpos:        getPreVal('absYpos', '0'),
+   742						xu:             getPreVal('xu', '37.8'),
+   743						yu:             getPreVal('yu', '37.8'),
+   744						xMin:           getPreVal('axisXmin', '-10'),
+   745						xMax:           getPreVal('axisXmax', '-10'),
+   746						yMin:           getPreVal('axisYmin', '-10'),
+   747						yMax:           getPreVal('axisYmax', '10'),
+   748						xLabelstep:     getPreVal('labelsXstep', '1'),
+   749						animationSpeed: getPreVal('animationSpeed', this.globals.speed.toString())
+   750					};
+       
+       
+   751					// 2. Initialize the axis object with immediate evaluations
+   752					// (This acts as the "First Frame" state)
+   753					this.globals.axis = {
+   754						xMin:        this.evalValue(this.globals.initialPlotterState.xMin),
+   755						xMax:        this.evalValue(this.globals.initialPlotterState.xMax),
+   756						yMin:        this.evalValue(this.globals.initialPlotterState.yMin),
+   757						yMax:        this.evalValue(this.globals.initialPlotterState.yMax),
+   758						xStep:       this.evalValue(getPreVal('gridXstep', '1')),
+   759						yStep:       this.evalValue(getPreVal('gridYstep', '1')),
+   760						xLabels:     getPreArr('xLabels'),
+   761						yLabels:     getPreArr('yLabels'),
+   762						xLabelstep:  this.evalValue(getPreVal('labelsXstep', '1')),
+   763						yLabelstep:  this.evalValue(getPreVal('labelsYstep', '1')),
+   764						titleX:      getPreVal('titleX', 'x'),
+   765						titleY:      getPreVal('titleY', 'y'),
+   766						absYpos:     this.evalValue(this.globals.initialPlotterState.absYpos),
+   767						ordXpos:     this.evalValue(this.globals.initialPlotterState.ordXpos)
+   768					};
+       
+   769					// console.log(this.globals.initialPlotterState.xu);
+       
+   770					// begin WARNING MECHANISM for xu, yu
+   771					const xuIsDynamic = getPreVal('xu', '').includes('t');
+   772					const yuIsDynamic = getPreVal('yu', '').includes('t');
+   773					const isAuto = this.globals.mapping !== 'physical';
+   774					const infoEl = document.getElementById('collabInfo');
+       
+   775					if ((xuIsDynamic || yuIsDynamic) && isAuto) {
+   776						// 1. Store the original text if you haven't yet (optional)
+   777						if (!infoEl.dataset.original) infoEl.dataset.original = infoEl.innerHTML;
+       
+   778						// 2. Override with the Warning
+   779						// infoEl.style.backgroundColor = "black";
+   780						infoEl.style.color = "#ff2211";
+   781						// infoEl.style.fontWeight = "bold";
+   782						infoEl.style.textWrap = "balance"; // Ensures lines are roughly equal length
+   783						infoEl.style.textTransform="none";
+   784						// infoEl.style.textAlign = "center";
+   785						infoEl.innerHTML = "⚠️ WARNING: xu/yu ignored\nin " + this.globals.mapping + " mode!";
+   786					} else {
+   787						// 3. Restore to original state
+   788						infoEl.style.backgroundColor = ""; // Resets to CSS default
+   789						infoEl.style.color = "";
+   790						infoEl.style.fontWeight = "";
+   791						infoEl.style.textWrap = "";
+   792						infoEl.style.textTransform="Uppercase";
+   793						if (infoEl.dataset.original) infoEl.innerHTML = infoEl.dataset.original;
+   794					}
+   795					// end WARNING MECHANISM for xu, yu
+       
+   796					// Update xu and yu for the first frame
+   797					this.globals.xu = this.evalValue(this.globals.initialPlotterState.xu);
+   798					this.globals.yu = this.evalValue(this.globals.initialPlotterState.yu);
+   799				}
+       
+   800				const newFunctions = [];
+       
+   801				// --- PREPARATION ---
+   802				// const cleanText = this.functions_input || ""; // Your input source
+   803				const runtimeScope_dev = {};
+   804				// dev code obsolete - defined above: const mathKeys = Object.getOwnPropertyNames(Math).filter(k => typeof Math[k] === 'function').join(', ');
+       
+   805				// --- PASS 1: THE HARVESTER (Identify and Sanitize) ---
+   806				const funMatches = [...cleanText.matchAll(/\\bfun([\s\S]*?)\\efun/g)];
+       
+   807				this.functions_dev = funMatches.map((match, i) => {
+   808					const block = match[1];
+   809					const getVal = (key) => {
+   810						const m = block.match(new RegExp(key + ':\\s*([^;\\n\\r]*)', 'i'));
+   811						return m ? m[1].trim() : "";
+   812					};
+       
+   813					const rawName = getVal('name');
+   814					let final_uName = "";
+       
+   815					// The Collector: alphanumeric base + trailing spaces/quotes
+   816					const primeMatch = rawName.match(/^([a-zA-Z0-9_]+)([\s']*)$/);
+   817					if (primeMatch) {
+   818						const base = primeMatch[1];
+   819						const n = (primeMatch[2].match(/'/g) || []).length;
+   820						// Rules: if quotes exist -> _pnBase; else if starts with number -> u_Base; else Base
+   821						if (n > 0) final_uName = `_p${n}${base}`;
+   822						else final_uName = /^[a-zA-Z]/.test(base) ? base : `u_${base}`;
+   823					}
+       
+   824					return {
+   825						uName: final_uName || `anon_${i+1}`,
+   826						internalId: `f${i + 1}_named`,
+   827						rawBlock: block,
+   828						term: getVal('term').replace(/\^/g, "**")
+   829					};
+   830				});
+       
+   831				// --- PASS 2: THE TRANSLATOR (Recursive Linking) ---
+   832				// We sort functions by name length (longest first) to prevent partial replacement
+   833				const sortedFns = [...this.functions_dev].sort((a, b) => b.uName.length - a.uName.length);
+       
+   834				this.functions_dev.forEach(fn => {
+   835					let t = fn.term;
+       
+   836					// A. Harvest primes in the formula itself (e.g., f ' ' -> _p2f)
+   837					t = t.replace(/([a-zA-Z0-9_]+)([\s']+)/g, (m, base, tail) => {
+   838						const n = (tail.match(/'/g) || []).length;
+   839						return n > 0 ? `_p${n}${base}` : base + tail;
+   840					});
+       
+   841					// B. Replace Names with Scope Calls
+   842					sortedFns.forEach(other => {
+   843						if (!other.uName) return;
+   844						const regex = new RegExp(`\\b${other.uName}\\b`, 'g');
+   845						t = t.replace(regex, (match, offset, fullStr) => {
+   846							const nextChar = fullStr[offset + match.length];
+   847							// Auto-append (x) if not a function call already
+   848							return nextChar === '(' ? `scope.${other.internalId}` : `scope.${other.internalId}(x)`;
+   849						});
+   850					});
+       
+   851					fn.translatedTerm = t;
+   852				});
+       
+       
+   853				// --- PASS 3: THE COMPILER (Main Term & Domain) ---
+   854				const self = this;
+   855				this.functions_dev.forEach(fn => {
+   856					// 1. Compile Main Math
+   857					try {
+   858						fn.exec_dev = new Function('x', 't', 'Math', 'scope', `
+   859							const { ${mathKeys} } = Math;
+   860							${macroKeys} // <--- THE KEY INJECTION
+   861							try {
+   862								return ${fn.translatedTerm};
+   863							} catch(e) { return 0; }
+   864						`);
+   865					} catch(e) { fn.exec_dev = null; }
+       
+   866					// 2. Extract and Compile Domain
+   867					const getRaw = (key) => {
+   868						const m = fn.rawBlock.match(new RegExp(`${key}:\\s*([^;\\n\\r]*)`, 'i'));
+   869						return m ? m[1].trim() : null;
+   870					};
+       
+   871					// --- UPDATED PASS 3: MULTI-DOMAIN HARVESTER ---
+   872					// --- PATCH n=3: THE AT-TRANSLATOR ---
+   873					let rawDom = getRaw('domain');
+   874					const rawAt = getRaw('at');
+       
+   875					// If 'at' exists, it constructs a [point point] domain and overrides 'domain'
+   876					if (rawAt) {
+   877						rawDom = `[${rawAt} ${rawAt}]`;
+   878					}
+       
+   879					fn.domFuncs = [];
+       
+   880					if (rawDom) {
+   881						// Regex explanation: Looks for [ ... ] groups globally
+   882						const segmentRegex = /\[\s*([^,\]\s]+)[\s,]+([^,\]\s]+)\s*\]/g;
+   883						let match;
+       
+   884						while ((match = segmentRegex.exec(rawDom)) !== null) {
+   885							const seg = [match[1], match[2]].map(expr => {
+   886								try {
+   887									// Pre-clean the expression
+   888									let cleanExpr = expr.replace(/\^/g, "**");
+       
+   889									// Build the full body of the function
+       
+   890									// 2. In Pass 3, remove the "Hardcoded safety fallback" line
+   891									const functionBody = `
+   892										${macroKeys}
+   893										const { ${mathKeys} } = Math;
+   894										return ${cleanExpr};
+   895									`;
+       
+       
+       
+   896									const f = new Function('t', 'Math', functionBody);
+       
+   897									// Log the success
+   898									const testVal = f(0, Math);
+   899									console.log(`RESULT [Domain]: ${expr} -> ${testVal}`);
+   900									return f;
+       
+   901								} catch(e) {
+   902									console.error(`ERROR [Domain]: Failed [${expr}]. Reason: ${e.message}`);
+   903									return null;
+   904								}
+   905							});
+   906							fn.domFuncs.push(seg);
+   907						}
+   908					}
+       
+   909					// Fallback: If no brackets found, check for a single pair without brackets
+   910					if (fn.domFuncs.length === 0 && rawDom) {
+   911						const simpleMatch = rawDom.match(/([^,\]\s]+)[\s,]+([^,\]\s]+)/);
+   912						if (simpleMatch) {
+   913							const seg = [simpleMatch[1], simpleMatch[2]].map(expr => {
+   914								try { return new Function('t', 'Math', `const { ${mathKeys} } = Math; return ${expr.replace(/\^/g, "**")};`); }
+   915								catch(e) { return null; }
+   916							});
+   917							fn.domFuncs.push(seg);
+   918						}
+   919					}
+       
+   920				});
+       
+   921				// --- PASS 4: SCOPE BINDING (Recursion) ---
+   922				this.functions_dev.forEach(fn => {
+   923					runtimeScope_dev[fn.internalId] = (x, t) => {
+   924						const currentT = (t !== undefined) ? t : (self.globals.t || 0);
+   925						if (typeof fn.exec_dev === 'function') {
+   926							try { return fn.exec_dev(x, currentT, Math, runtimeScope_dev); } catch(e) { return 0; }
+   927						}
+   928						return 0;
+   929					};
+   930				});
+       
+   931				// --- PASS 5: THE BRIDGE ---
+   932				this.functions = this.functions_dev.map(fn => {
+   933					const getAttr = (key, fallback) => {
+   934						// sometimes too greedy: const m = fn.rawBlock.match(new RegExp(`${key}:\\s*([^;\\n\\r]*)`, 'i'));
+   935						const m = fn.rawBlock.match(new RegExp(`${key}:[ \t]*([^; \n\r\t]*)`, 'i'));
+   936						return m ? m[1].trim() : fallback;
+   937					};
+       
+       
+   938					/* Debug code
+   939					// --- CAPTURE AND LOG HERE ---
+   940					const rawMarker = getAttr('markerType', 'bullet');
+   941					console.log(`DEBUG [${fn.uName}]: raw=[${rawMarker}]`);
+   942					// ----------------------------
+   943					*/
+       
+   944					return {
+   945						name: fn.uName,
+   946						exec: (x, t) => {
+   947							if (typeof fn.exec_dev === 'function') return fn.exec_dev(x, t, Math, runtimeScope_dev);
+   948							return 0;
+   949						},
+   950						visible: !(['no', 'false'].includes(getAttr('plot', 'yes').toLowerCase())),
+   951						color: getAttr('color', 'green'),
+   952						thickness: parseFloat(getAttr('thickness', '2')) || 2,
+   953						dash: getAttr('dash', '').replace(/[\[\]]/g, '').split(/[\s,]+/).map(Number).filter(n => !isNaN(n)),
+   954						marker: ['yes', 'true', 'on'].includes(getAttr('marker', 'no').toLowerCase()),
+   955						markerType: getAttr('markerType', 'bullet').toLowerCase() || 'bullet',
+   956						// works: 7markerType: (getAttr('markerType', 'bullet').trim().split(';')[0] || 'bullet').toLowerCase(),
+   957						// dev code:  markerType: ('').toLowerCase() || ('bullet').toLowerCase(),
+       
+   958						markerSize: parseFloat(getAttr('markerSize', '5')) || 5,
+   959						scopeRef: runtimeScope_dev,
+       
+   960						// DYNAMIC DOMAIN GETTER
+   961						get domain() {
+   962							const t = self.globals.t || 0;
+       
+   963							// If we have segments, calculate each one
+   964							if (fn.domFuncs && fn.domFuncs.length > 0) {
+   965								return fn.domFuncs.map(seg => {
+   966									let start = seg[0] ? seg[0](t, Math) : self.globals.axis.xMin;
+   967									let end   = seg[1] ? seg[1](t, Math) : self.globals.axis.xMax;
+   968									return [start, end];
+   969								});
+   970							}
+       
+   971							// Default: Full Axis
+   972							return [[self.globals.axis.xMin, self.globals.axis.xMax]];
+   973						}
+   974					};
+   975				}); // return block
+   976				// Just for testing v0.80 wallWarnings()
+   977				// this.functions_dev[0].warning = "Test: Reserved name 'sin' detected!";
+   978			} // parseScript()
+       
+       
+   979			toScreenX(mathX) {
+   980				return (mathX * this.currentScaleX) + this.currentOffsetX;
+   981			}
+       
+   982			toScreenY(mathY) {
+   983				// Inverted for Canvas Y
+   984				return this.currentOffsetY - (mathY * this.currentScaleY);
+   985			}
+       
+   986			// Inverse for the pixel-walk
+   987			toMathX(screenX) {
+   988				return (screenX - this.currentOffsetX) / this.currentScaleX;
+   989			}
+       
+       
+   990			render() {
+   991				// 1. EMERGENCY BRAKE: Still keep this. If there's a system error,
+   992				// don't even try to draw math.
+   993				if (this.systemErrors && this.systemErrors.length > 0) {
+   994					this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+   995					this.wallWarnings();
+   996					return;
+   997				}
+       
+   998				// 2. TIME UPDATE: Only advance 't' automatically if animating
+   999				// (If not animating, we assume 't' was changed manually via the UI)
+  1000				// if (this.isAnimating) { this.updateT(); }
+       
+  1001				// 1. THE LOGIC: Update ONLY what depends on time (t)
+  1002				// This loop stays, but ensure it's fast.
+  1003				this.dynamicVariables.forEach(key => {
+  1004					const rawValue = this.globals.initialPlotterState[key];
+  1005					const result = this.evalValue(rawValue);
+       
+  1006					if (key === 'xu') this.globals.xu = result;
+  1007					else if (key === 'yu') this.globals.yu = result;
+  1008					else if (this.globals.axis.hasOwnProperty(key)) {
+  1009						this.globals.axis[key] = result;
+  1010					}
+  1011				});
+       
+  1012				// 2. THE SETUP
+  1013				const isDark = document.body.classList.contains('dark-mode');
+  1014				this.prepareCanvas(isDark);
+  1015				this.updateTransform();
+       
+  1016				// 3. THE DRAWING (The Physical Pass)
+  1017				const ctx = this.ctx;
+  1018				ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+       
+  1019				ctx.save();
+  1020				this.applyClipping();
+  1021				this.drawGrid(isDark);
+  1022				this.drawAxes(isDark);
+  1023				this.drawFunctions();
+  1024				ctx.restore();
+       
+  1025				this.drawLabels(isDark);
+  1026				this.drawTitles(isDark);
+       
+  1027				// Show the errors collected during the last parseScript call
+  1028				this.wallWarnings();
+       
+  1029				// 4. THE UI: Minimal update
+  1030				const tDisp = document.getElementById('t-display-id');
+  1031				if (tDisp) {
+  1032					tDisp.innerText = `t = ${this.globals.t.toFixed(3)}`;
+  1033				}
+  1034			} // end of render()
+       
+       
+       
+       
+  1035			drawGrid(isDark) {
+  1036				const axis = this.globals.axis;
+  1037				const ctx = this.ctx;
+  1038				ctx.strokeStyle = isDark ? "#666" : "#222";
+  1039				ctx.lineWidth = 0.7;
+  1040				ctx.beginPath();
+       
+  1041				// Vertical Grid lines
+  1042				for (let x = Math.ceil(axis.xMin / axis.xStep) * axis.xStep; x <= axis.xMax; x += axis.xStep) {
+  1043					const px = this.toScreenX(x);
+  1044					ctx.moveTo(px, this.toScreenY(axis.yMin));
+  1045					ctx.lineTo(px, this.toScreenY(axis.yMax));
+  1046				}
+  1047				// Horizontal Grid lines
+  1048				for (let y = Math.ceil(axis.yMin / axis.yStep) * axis.yStep; y <= axis.yMax; y += axis.yStep) {
+  1049					const py = this.toScreenY(y);
+  1050					ctx.moveTo(this.toScreenX(axis.xMin), py);
+  1051					ctx.lineTo(this.toScreenX(axis.xMax), py);
+  1052				}
+  1053				ctx.stroke();
+  1054			} // end of drawGrid
+       
+       
+  1055			// Draw axes and ticks.
+  1056			drawAxes(isDark) {
+  1057				const axis = this.globals.axis;
+  1058				const ctx = this.ctx;
+  1059				const pyAxis = this.toScreenY(axis.absYpos || 0);
+  1060				const pxAxis = this.toScreenX(axis.ordXpos || 0);
+       
+  1061				ctx.strokeStyle = isDark ? "#eee" : "#000";
+  1062				ctx.lineWidth = 1.5;
+  1063				ctx.beginPath();
+       
+  1064				// 1. Draw main Axis lines
+  1065				ctx.moveTo(this.toScreenX(axis.xMin), pyAxis);
+  1066				ctx.lineTo(this.toScreenX(axis.xMax), pyAxis);
+  1067				ctx.moveTo(pxAxis, this.toScreenY(axis.yMin));
+  1068				ctx.lineTo(pxAxis, this.toScreenY(axis.yMax));
+       
+  1069				// 2. THE MISSING TICKS: X-Axis Ticks
+  1070				// Using xStep (or labelsXstep if you prefer)
+  1071				for (let x = Math.ceil(axis.xMin / axis.xStep) * axis.xStep; x <= axis.xMax; x += axis.xStep) {
+  1072					if (Math.abs(x) < 0.0001) continue; // Skip the origin tick
+  1073					const px = this.toScreenX(x);
+  1074					ctx.moveTo(px, pyAxis - 5); // Start 5px above
+  1075					ctx.lineTo(px, pyAxis + 5); // End 5px below
+  1076				}
+       
+  1077				// 3. THE MISSING TICKS: Y-Axis Ticks
+  1078				for (let y = Math.ceil(axis.yMin / axis.yStep) * axis.yStep; y <= axis.yMax; y += axis.yStep) {
+  1079					if (Math.abs(y) < 0.0001) continue; // Skip the origin tick
+  1080					const py = this.toScreenY(y);
+  1081					ctx.moveTo(pxAxis - 5, py); // Start 5px left
+  1082					ctx.lineTo(pxAxis + 5, py); // End 5px right
+  1083				}
+       
+  1084				ctx.stroke();
+  1085			} // end of drawAxes()
+       
+       
+  1086			drawTitles(isDark) {
+  1087				const axis = this.globals.axis;
+  1088				const ctx = this.ctx;
+       
+  1089				// Calculate the physical boundaries of the plot
+  1090				const xMin = this.toScreenX(axis.xMin);
+  1091				const xMax = this.toScreenX(axis.xMax);
+  1092				const yMax = this.toScreenY(axis.yMax);
+  1093				const yMin = this.toScreenY(axis.yMin);
+       
+  1094				ctx.fillStyle = isDark ? "#fff" : "#000";
+  1095				ctx.font = "bold 15px Arial";
+       
+  1096				// X-Axis Title (Bottom Right of the CS)
+  1097				if (axis.titleX) {
+  1098					ctx.textAlign = "right";
+  1099					ctx.textBaseline = "bottom";
+  1100					// Place it just above the X-axis line at the right edge
+  1101					const pyAxis = this.toScreenY(axis.absYpos || 0);
+  1102					ctx.fillText(axis.titleX, xMax - 5, pyAxis - 5);
+  1103				}
+       
+  1104				// Y-Axis Title (Top Left of the CS)
+  1105				if (axis.titleY) {
+  1106					ctx.textAlign = "left";
+  1107					ctx.textBaseline = "top";
+  1108					// Place it to the right of the Y-axis line at the top edge
+  1109					const pxAxis = this.toScreenX(axis.ordXpos || 0);
+  1110					ctx.fillText(axis.titleY, pxAxis + 10, yMax + 5);
+  1111				}
+  1112			}
+       
+  1113			drawLabels(isDark) {
+  1114				const axis = this.globals.axis;
+  1115				const ctx = this.ctx;
+  1116				const pyAxis = this.toScreenY(axis.absYpos || 0);
+  1117				const pxAxis = this.toScreenX(axis.ordXpos || 0);
+       
+  1118				ctx.fillStyle = isDark ? "#fff" : "#000";
+  1119				ctx.font = "16px Arial";
+       
+  1120				// X-Labels
+  1121				ctx.textAlign = "center";
+  1122				ctx.textBaseline = "top";
+  1123				for (let x = Math.ceil(axis.xMin / axis.xLabelstep) * axis.xLabelstep; x <= axis.xMax; x += axis.xLabelstep) {
+  1124					if (x === axis.ordXpos) continue; // Skip origin
+  1125					ctx.fillText(Number.isInteger(x) ? x : x.toFixed(2), this.toScreenX(x), pyAxis + 8);
+  1126				}
+       
+  1127				// Y-Labels
+  1128				ctx.textAlign = "right";
+  1129				ctx.textBaseline = "middle";
+  1130				for (let y = Math.ceil(axis.yMin / axis.yLabelstep) * axis.yLabelstep; y <= axis.yMax; y += axis.yLabelstep) {
+  1131					if (y === axis.absYpos) continue; // Skip origin
+  1132					ctx.fillText(Number.isInteger(y) ? y : y.toFixed(2), pxAxis - 8, this.toScreenY(y));
+  1133				}
+  1134			}
+       
+       
+       
+  1135			drawFunctions() {
+  1136				const ctx = this.ctx;
+  1137				this.functions.forEach(fn => {
+  1138					if (!fn.visible) return;
+       
+  1139					ctx.strokeStyle = fn.color;
+  1140					ctx.lineWidth = fn.thickness;
+  1141					ctx.setLineDash(fn.dash || []);
+       
+  1142					fn.domain.forEach(segment => {
+  1143						// 1. Get exact Math boundaries
+  1144						// Inside drawFunctions() -> fn.domain.forEach(segment => { ...
+  1145						// REPLACE THESE TWO LINES:
+  1146						// let mathStart = this.evalValue(segment[0]);
+  1147						// let mathEnd   = this.evalValue(segment[1]);
+       
+  1148						// WITH THESE:
+  1149						let mathStart = segment[0];
+  1150						let mathEnd   = segment[1];
+       
+  1151						if (isNaN(mathStart) || isNaN(mathEnd)) return;
+       
+  1152						// --- THE CLASSIC SWAP ---
+  1153						// If the user entered domain: [10 -10], we fix it here
+  1154						// so pxStart is always <= pxEnd.
+  1155						if (mathStart > mathEnd) {
+  1156							let temp = mathStart;
+  1157							mathStart = mathEnd;
+  1158							mathEnd = temp;
+  1159						}
+       
+  1160						// 2. Map to Screen Space once
+  1161						const pxStart = this.toScreenX(mathStart);
+  1162						const pxEnd   = this.toScreenX(mathEnd);
+       
+  1163						ctx.beginPath();
+       
+  1164						// 3. THE FIRST POINT (Exact Math Start)
+  1165						const yStart = fn.exec(mathStart, this.globals.t, Math, fn.scopeRef);
+  1166						if (yStart !== null && isFinite(yStart)) {
+  1167							ctx.moveTo(pxStart, this.toScreenY(yStart));
+  1168						}
+       
+       
+  1169						// 4. THE SAMPLING LOOP - Optimized
+  1170						// We start the loop slightly AFTER pxStart to avoid double-drawing the first point
+  1171						// Pull these outside the loop to avoid property lookups
+  1172						const step = 2;
+  1173						const currentT = this.globals.t;
+  1174						const math = Math;
+  1175						const exec = fn.exec;
+  1176						const scope = fn.scopeRef;
+       
+       
+  1177						// --- THE SINGLE POINT GATE ---
+  1178						const isSinglePoint = (pxStart === pxEnd);
+       
+  1179						if (isSinglePoint && fn.marker) {
+  1180							// Just draw it once!
+  1181							const y = exec(mathStart, currentT, math, scope);
+  1182							if (y !== null && isFinite(y)) {
+  1183								const screenY = this.currentOffsetY - (y * this.currentScaleY);
+  1184								this.drawMarkerGlyph(fn.markerType || 'bullet', pxStart, screenY, fn.color, fn.markerSize);
+  1185							}
+  1186						} else {
+  1187							// Existing loop for lines and scatter markers
+  1188							for (let px = pxStart + step; px < pxEnd; px += step) {
+  1189								// Inline the math for toMathX to avoid function call overhead
+  1190								const x = (px - this.currentOffsetX) / this.currentScaleX;
+       
+  1191								const y = exec(x, currentT, math, scope);
+  1192								// dev code: const y = 0;
+       
+  1193								// --- PATCH n=1: THE FORK ---
+  1194								const screenY = this.currentOffsetY - (y * this.currentScaleY);
+       
+  1195								// TEMP MANUFACTURED FLAG FOR TESTING (Remove after Step 7)
+  1196								// fn.marker = true;
+  1197								// fn.markerType = 'bullet';
+       
+  1198								if (fn.marker) {
+  1199									ctx.moveTo(px, screenY);
+  1200									this.drawMarkerGlyph(fn.markerType || 'bullet', px, screenY, fn.color, fn.markerSize);
+  1201								} else {
+  1202									if (y !== null && isFinite(y)) {
+  1203										ctx.lineTo(px, this.currentOffsetY - (y * this.currentScaleY));
+  1204									} else {
+  1205										ctx.beginPath();
+  1206									}
+  1207								}
+  1208							}
+  1209							// 5. THE LAST POINT (Exact Math End)
+  1210							if (!fn.marker) {
+  1211								const yEnd = fn.exec(mathEnd, this.globals.t, Math, fn.scopeRef);
+  1212								if (yEnd !== null && isFinite(yEnd)) {
+  1213									ctx.lineTo(pxEnd, this.toScreenY(yEnd));
+  1214								}
+  1215								// ctx.lineCap = "round"; // butt
+  1216								ctx.lineJoin = "round";
+  1217								ctx.stroke();
+  1218							}
+  1219						}
+  1220					});
+  1221				});
+  1222			} // end of drawFunctions()
+       
+       
+  1223			drawMarkerGlyph(type, x, y, color, size) {
+  1224				const ctx = this.ctx;
+  1225				ctx.save();
+  1226				try {
+  1227					ctx.beginPath();
+  1228					ctx.strokeStyle = color;
+  1229					ctx.fillStyle = color;
+  1230					ctx.lineWidth = Math.max(1, size / 4);
+       
+  1231					switch (type) {
+  1232						case 'bullet': // Filled Circle
+  1233							ctx.arc(x, y, size, 0, Math.PI * 2);
+  1234							ctx.fill();
+  1235							break;
+       
+  1236						case 'circle': // Outline Circle
+  1237							ctx.arc(x, y, size, 0, Math.PI * 2);
+  1238							ctx.stroke();
+  1239							break;
+       
+  1240						case 'plus': // Vertical/Horizontal +
+  1241							ctx.moveTo(x - size, y);
+  1242							ctx.lineTo(x + size, y);
+  1243							ctx.moveTo(x, y - size);
+  1244							ctx.lineTo(x, y + size);
+  1245							ctx.stroke();
+  1246							break;
+       
+  1247						case 'cross': // X Shape (Rotated 45 degrees)
+  1248							const offset = size * 0.707; // sin(45) * size
+  1249							ctx.moveTo(x - offset, y - offset);
+  1250							ctx.lineTo(x + offset, y + offset);
+  1251							ctx.moveTo(x + offset, y - offset);
+  1252							ctx.lineTo(x - offset, y + offset);
+  1253							ctx.stroke();
+  1254							break;
+       
+  1255						case 'square':
+  1256						case 'rect':
+  1257							ctx.rect(x - size, y - size, size * 2, size * 2);
+  1258							ctx.fill();
+  1259							break;
+  1260					}
+  1261				} finally {
+  1262					ctx.restore();
+  1263				}
+  1264			}
+       
+       
+  1265			wallWarnings() {
+  1266				if (this.globals.quiet === true) return;
+       
+  1267				// 1. Collect everything into one list
+  1268				const sysErrors = this.systemErrors || [];
+  1269				const fnErrors = (this.functions_dev || [])
+  1270									.filter(fn => fn.warning)
+  1271									.map(fn => fn.warning);
+       
+  1272				const allErrors = [...sysErrors, ...fnErrors];
+       
+  1273				// 2. Single check: if nothing is wrong, get out
+  1274				if (allErrors.length === 0) return;
+       
+  1275				const ctx = this.ctx;
+  1276					ctx.save();
+  1277					ctx.setTransform(1, 0, 0, 1, 0, 0);
+       
+  1278					// 1. THE GHOST PASS: Calculate required lines
+  1279					const lineHeight = 20;
+  1280					let totalLines = 1; // Start with 1 for the Header
+  1281					const wrappedErrors = [];
+       
+  1282					allErrors.forEach(err => {
+  1283						const msg = `> ${err}`;
+  1284						if (msg.length > 45) {
+  1285							wrappedErrors.push(msg.substring(0, 45));
+  1286							wrappedErrors.push("  " + msg.substring(45));
+  1287							totalLines += 2;
+  1288						} else {
+  1289							wrappedErrors.push(msg);
+  1290							totalLines += 1;
+  1291						}
+  1292					});
+       
+  1293					// 2. THE BACKGROUND PASS: Draw the box based on the Ghost Pass
+  1294					const boxW = 420;
+  1295					const boxH = 30 + (totalLines * lineHeight); // Dynamic Height!
+       
+  1296					ctx.fillStyle = "rgba(20, 0, 0, 0.8)";
+  1297					ctx.strokeStyle = "rgba(255, 50, 50, 0.5)";
+  1298					ctx.fillRect(10, 10, boxW, boxH);
+  1299					ctx.strokeRect(10, 10, boxW, boxH);
+       
+  1300					// 3. THE PHYSICAL PASS: Draw the text
+  1301					ctx.font = "bold 14px monospace";
+  1302					ctx.fillStyle = "#ff6666";
+  1303					ctx.fillText("⚠️ SCRIPT ERRORS:", 20, 32);
+       
+  1304					ctx.font = "13px monospace";
+  1305					ctx.fillStyle = "#eeeeee";
+  1306					wrappedErrors.forEach((line, i) => {
+  1307						ctx.fillText(line, 25, 55 + (i * lineHeight));
+  1308					});
+       
+  1309					ctx.restore();
+  1310			} // end of wallWarnings()
+       
+       
+  1311			updateTransform() {
+  1312				const { width, height } = this.canvas;
+  1313				const axis = this.globals.axis;
+       
+  1314				if (this.globals.mapping === "physical") {
+  1315					this.currentScaleX = this.globals.xu;
+  1316					this.currentScaleY = this.globals.yu;
+  1317				} else if (this.globals.mapping === "non_distorting") {
+  1318					const unitScale = width / (axis.xMax - axis.xMin);
+  1319					this.currentScaleX = unitScale;
+  1320					this.currentScaleY = unitScale;
+  1321				} else {
+  1322					this.currentScaleX = width / (axis.xMax - axis.xMin);
+  1323					this.currentScaleY = height / (axis.yMax - axis.yMin);
+  1324				}
+       
+  1325				const mathMidX = (axis.xMax + axis.xMin) / 2;
+  1326				const mathMidY = (axis.yMax + axis.yMin) / 2;
+  1327				this.currentOffsetX = (width / 2) - (mathMidX * this.currentScaleX);
+  1328				this.currentOffsetY = (height / 2) + (mathMidY * this.currentScaleY);
+  1329			} // end of updateTransform()
+       
+  1330			applyClipping() {
+  1331				const axis = this.globals.axis;
+  1332				const xMin = this.toScreenX(axis.xMin);
+  1333				const xMax = this.toScreenX(axis.xMax);
+  1334				const yMax = this.toScreenY(axis.yMax);
+  1335				const yMin = this.toScreenY(axis.yMin);
+       
+  1336				this.ctx.beginPath();
+  1337				this.ctx.rect(xMin, yMax, xMax - xMin, yMin - yMax);
+  1338				this.ctx.clip();
+  1339			}
+       
+       
+  1340			prepareCanvas(isDark) {
+  1341				this.ctx.fillStyle = isDark ? "#000" : "#fff";
+  1342				this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+  1343			}
+       
+       
+  1344			showCanvasWall(message) {
+  1345				console.warn("Canvas Wall Triggered:", message);
+  1346				// Future: Draw a red box with the message on the canvas
+  1347			}
+       
+       
+  1348		} // end of class Plotter{}
+       
+       
+  1349		Plotter.CONFIG = {
+  1350			"name": { type: "string", def: "f + index", desc: "Function label" },
+  1351			"term": { type: "math", def: "0", desc: "Math expression" },
+  1352			"color": { type: "color", def: "#00AA00", desc: "Hex/CSS color" },
+  1353			"thickness": { type: "number", def: "2", desc: "Line width" },
+  1354			"dash": { type: "array", def: "[]", desc: "[dash gap]" },
+  1355			"plot": { type: ["yes","no"], def: "yes", desc: "Visibility" },
+  1356			"domain": { type: "array", def: "auto", desc: "[min max]" },
+  1357			"loopMode": { type: ["cycle", "sweep", "once", "normal"], def: "normal", desc: "Anim style" },
+  1358			"animSpeed": { type: "array", def: "[1 5]", desc: "[min max]" },
+  1359			"tRange": { type: "array", def: "[-3.14 3.14]", desc: "t-range" },
+  1360			"axisXmin": { type: "number", def: "-10", desc: "Left limit" },
+  1361			"axisXmax": { type: "number", def: "10", desc: "Right limit" },
+  1362			"axisYmin": { type: "number", def: "-10", desc: "Bottom limit" },
+  1363			"axisYmax": { type: "number", def: "10", desc: "Top limit" },
+  1364			"gridXstep": { type: "number", def: "1", desc: "X grid spacing" },
+  1365			"gridYstep": { type: "number", def: "1", desc: "Y grid spacing" },
+  1366			"ordXpos": { type: "number", def: "0", desc: "Y-axis X-position" },
+  1367			"absYpos": { type: "number", def: "0", desc: "X-axis Y-position" },
+  1368			"xLabels": { type: "array", def: "auto", desc: "Custom X labels" },
+  1369			"yLabels": { type: "array", def: "auto", desc: "Custom Y labels" },
+  1370			"labelsXstep": { type: "number", def: "1", desc: "Spacing between X labels" },
+  1371			"labelsYstep": { type: "number", def: "1", desc: "Spacing between Y labels" },
+  1372			"titleX":  { type: "string", def: "x", desc: "Label for the X-axis" },
+  1373			"titleY":  { type: "string", def: "y", desc: "Label for the Y-axis" },
+  1374			"mapping": { type: ["fill_canvas", "non_distorting", "physical"], def: "fill_canvas", desc: "Coordinate mapping style" }
+  1375		};
+       
+  1376		const plotterInstance = new Plotter('plotCanvas');
+       
+       
+  1377		document.getElementById('scriptArea0').addEventListener('input', parseAndPlot);
+  1378		document.getElementById('scriptArea1').addEventListener('input', parseAndPlot);
+       
+  1379		document.getElementById('tInput').addEventListener('input', (e) => {
+  1380			const val = parseFloat(e.target.value);
+  1381			if (!isNaN(val)) {
+  1382				plotterInstance.globals.t = val;
+  1383				// This is the manual "nudge" that draws the frame while paused:
+  1384				if (!plotterInstance.isAnimating) {
+  1385					plotterInstance.render();
+  1386				}
+  1387			}
+  1388		});
+       
+       
+  1389		function openTab(index) {
+  1390			document.querySelectorAll('.tab-btn, .tab-content').forEach(el => el.classList.remove('active'));
+  1391			document.querySelectorAll('.tab-btn')[index].classList.add('active');
+  1392			document.getElementById('tab' + index).classList.add('active');
+  1393			if (index === 2) { updateHelpKeywords(); }
+  1394		}
+       
+       
+  1395		function parseAndPlot() {
+  1396			// dev code:
+  1397			console.log("Current t before parsing:", plotterInstance.globals.t);
+       
+  1398			const area0 = document.getElementById('scriptArea0').value;
+  1399			const area1 = document.getElementById('scriptArea1').value;
+  1400			const fullScript = area0 + "\n" + area1;
+       
+  1401			if (!isResetting) {
+  1402				localStorage.setItem('plotter_script_tab0', area0);
+  1403				localStorage.setItem('plotter_script_tab1', area1);
+  1404			}
+       
+  1405			// HEAVY LIFTING: Logic, naming gatekeeper, and regex
+  1406			plotterInstance.parseScript(fullScript);
+       
+  1407			// PRE-CALCULATE DYNAMIC VARIABLES:
+  1408			// Do this once here, so render() doesn't have to check strings every frame
+  1409			plotterInstance.dynamicVariables = Object.keys(plotterInstance.globals.initialPlotterState).filter(key => {
+  1410				return plotterInstance.globals.initialPlotterState[key].toString().includes('t');
+  1411			});
+       
+  1412			plotterInstance.compiledCache = {};
+       
+  1413			const g = plotterInstance.globals;
+  1414			if (g.t < g.tMin || g.t > g.tMax) {
+  1415				// dev code:
+  1416				console.warn("t was out of range! Resetting to:", g.tMin);
+  1417				g.t = g.tMin;
+  1418			}
+       
+  1419			// Update the UI display for 't' so the user sees the correct start value
+  1420			const tInput = document.getElementById('tInput'); // Adjust to your ID
+  1421			// dev code:
+  1422			// console.log("DOM element found:", tInput);
+       
+  1423	        if (tInput) {
+  1424	            // Use .value for input fields, and force it to be a string
+  1425	            tInput.value = g.t.toFixed(4);
+  1426	            console.log("Updated input value to:", tInput.value);
+  1427	        }
+       
+  1428			if (!plotterInstance.isAnimating) { plotterInstance.render(); }
+  1429		} // end of parseAndPlot()
+       
+       
+  1430		document.getElementById('toggleAnim').onclick = function() {
+  1431			plotterInstance.isAnimating = !plotterInstance.isAnimating;
+  1432			this.innerText = plotterInstance.isAnimating ? "⏸" : "◀ ▶";
+  1433		};
+       
+       
+  1434		document.getElementById('resetT').addEventListener('click', () => {
+  1435			// 1. Reset math to the start of the defined range
+  1436			const startTime = plotterInstance.globals.tMin;
+  1437			plotterInstance.globals.t = startTime;
+       
+  1438			// 2. Update the UI field to match
+  1439			const tInput = document.getElementById('tInput');
+  1440			if (tInput) {
+  1441				// We use toFixed(3) to keep the UI consistent with your v050 design
+  1442				tInput.value = startTime.toFixed(3);
+  1443			}
+       
+  1444			// 3. Set the animation direction back to forward (optional but helpful)
+  1445			plotterInstance.globals.tDir = 1;
+       
+  1446			// 4. Force a redraw so the graph matches the new time
+  1447			plotterInstance.render();
+  1448		});
+       
+       
+  1449		document.getElementById('speedSlider').oninput = (e) => {
+  1450			plotterInstance.globals.speed = parseFloat(e.target.value);
+  1451			// If paused, re-render one frame so the user sees
+  1452			// any changes that speed might affect (if any).
+  1453			// This one line nails the slider at its current point, can't move it with the mouse pointer:
+  1454			// if (!plotterInstance.isAnimating) { plotterInstance.render(); }
+  1455		};
+       
+       
+  1456		/* obsolete code?
+  1457		document.getElementById('tInput').onchange = function() {
+  1458			const val = parseFloat(this.value);
+  1459			const g = plotterInstance.globals;
+       
+  1460			// Logic: If in range, accept it. If not, the render() will overwrite it
+  1461			// with the old t value on the next frame.
+  1462			if (!isNaN(val) && val >= g.tMin && val <= g.tMax) {
+  1463				g.t = val;
+  1464			}
+  1465		};
+  1466		*/
+       
+  1467		function toggleDarkMode() {
+  1468			const isDark = document.body.classList.toggle('dark-mode');
+  1469			localStorage.setItem('darkMode', isDark);
+  1470			document.getElementById('darkToggle').innerText = isDark ? '☀️' : '🌙';
+  1471			plotterInstance.render();
+  1472		}
+       
+       
+  1473		function updateHelpKeywords() {
+  1474			const container = document.getElementById('keyword-list');
+  1475			if (!container) return;
+       
+  1476			let listHtml = [];
+       
+  1477			// Loop through the Object entries
+  1478			for (const [key, info] of Object.entries(Plotter.CONFIG)) {
+  1479				// Handle array types vs string types for the "Allowed" column
+  1480				const typeInfo = Array.isArray(info.type) ? info.type.join('|') : info.type;
+       
+  1481				const entry = `<code>${key}</code> <small>(${typeInfo}) [${info.def}] — ${info.desc}</small>`;
+  1482				listHtml.push(entry);
+  1483			}
+       
+  1484			container.innerHTML = '<br><strong>Technical Reference:</strong><br>' +
+  1485				// We use a div with a 10px bottom margin (adjustable \vskip)
+  1486				'<div style="margin-bottom: 10px;"><strong><small>' +
+  1487				'true and false are synonyms for yes and no.' +
+  1488				'</small></strong></div>' +
+  1489				listHtml.join('<br>');
+       
+  1490		}
+       
+       
+  1491		/* dev code - please keep it
+  1492		for (var i = 0; i < sorted.length; i++) {
+  1493			var k = sorted[i];
+  1494			console.log("Processing keyword index " + i + ":", k); // This is your console check
+  1495		}
+  1496		dev code - please keep it*/
+       
+       
+  1497		window.addEventListener('keydown', (e) => {
+  1498			// 1. Identify the elements correctly
+  1499			const speedSlider = document.getElementById('speedSlider');
+       
+  1500			// 2. Ignore if typing in text fields
+  1501			if (e.target.tagName === 'TEXTAREA' || e.target === tInput) return;
+       
+  1502			// 3. Spacebar Toggle
+  1503			if (e.code === 'Space') {
+  1504				e.preventDefault();
+  1505				toggleAnimAction();
+  1506				return;
+  1507			}
+       
+  1508			// 4. Arrow Key Speed Control
+  1509			if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+  1510				// Prevent the browser's native slow-motion slider move
+  1511				e.preventDefault();
+       
+  1512				// Use the actual range from the DOM element
+  1513				const sMin = parseFloat(speedSlider.min);
+  1514				const sMax = parseFloat(speedSlider.max);
+  1515				const range = sMax - sMin;
+  1516				const jump = range * 0.1; // 10% jump
+       
+  1517				let currentVal = parseFloat(speedSlider.value);
+  1518				let newVal;
+       
+  1519				if (e.code === 'ArrowRight') {
+  1520					newVal = Math.min(sMax, currentVal + jump);
+  1521				} else {
+  1522					newVal = Math.max(sMin, currentVal - jump);
+  1523				}
+       
+  1524				// Apply to both the UI and the Engine
+  1525				speedSlider.value = newVal;
+  1526				plotterInstance.globals.speed = newVal;
+       
+  1527				// Debug check: Open your browser console (F12) to see this move
+  1528				console.log("New Speed:", plotterInstance.globals.speed);
+  1529			}
+  1530		});
+       
+       
+  1531		function old_hardReset() {
+  1532			if (confirm("Wipe all changes and return to the built-in HTML examples?")) {
+  1533				isResetting = true;
+  1534				localStorage.clear();
+  1535				sessionStorage.clear();
+       
+  1536				// Use the CORRECT IDs from your HTML
+  1537				const area0 = document.getElementById('scriptArea0');
+  1538				const area1 = document.getElementById('scriptArea1');
+       
+  1539				// This forces the browser to forget what you typed
+  1540				if(area0) area0.value = area0.defaultValue;
+  1541				if(area1) area1.value = area1.defaultValue;
+       
+  1542				window.location.reload();
+  1543			}
+  1544		}
+       
+  1545		window.onload = () => {
+  1546			// 1. Dark Mode Logic
+  1547			const savedDark = localStorage.getItem('darkMode');
+  1548			if (savedDark === null || savedDark === 'true') {
+  1549				document.body.classList.add('dark-mode');
+  1550				document.getElementById('darkToggle').innerText = '☀️';
+  1551			}
+       
+  1552			// 2. LOAD SCRIPT FROM STORAGE (The Missing Link)
+  1553			// Only overwrite the HTML text if there is something saved in storage
+  1554			const saved0 = localStorage.getItem('plotter_script_tab0');
+  1555			const saved1 = localStorage.getItem('plotter_script_tab1');
+       
+  1556			if (saved0 !== null) document.getElementById('scriptArea0').value = saved0;
+  1557			if (saved1 !== null) document.getElementById('scriptArea1').value = saved1;
+       
+  1558			// 3. Update Help & Start
+  1559			updateHelpKeywords();
+  1560			parseAndPlot();
+       
+  1561			// "FORCE INITIAL BUTTON STATE
+  1562			// maybe obsolete if/because default button text is "⏸"
+  1563			const animBtn = document.getElementById('toggleAnim');
+  1564			if (animBtn) {
+  1565				animBtn.innerText = plotterInstance.isAnimating ? "⏸" : "◀ ▶";
+  1566			}
+  1567		};
+       
+       
+  1568		document.getElementById('toggleDir').onclick = function() {
+  1569			plotterInstance.globals.tDir *= -1;
+  1570			// Update the button text visually
+  1571			this.innerText = plotterInstance.globals.tDir === 1 ? "▶" : "◀";
+  1572			// Forward Reverse
+  1573		};
+       
+       
+  1574		function toggleAnimAction() {
+  1575			if (plotterInstance.isAnimating) {
+  1576				plotterInstance.stop(); // Use the class method to cancel the frame
+  1577			} else {
+  1578				// Reset 'once' mode if at the end
+  1579				if (plotterInstance.globals.loopMode === 'once' &&
+  1580					plotterInstance.globals.t >= plotterInstance.globals.tMax) {
+  1581					plotterInstance.globals.t = plotterInstance.globals.tMin;
+  1582				}
+  1583				plotterInstance.start(); // Use the class method to begin requestAnimationFrame
+  1584			}
+       
+  1585			document.getElementById('toggleAnim').innerText =
+  1586				plotterInstance.isAnimating ? "⏸" : "◀ ▶";
+  1587		}
+       
+  1588		// Update the button click to use the same function
+  1589		document.getElementById('toggleAnim').onclick = toggleAnimAction;
+       
+       
+  1590		// Ensure this is at the BOTTOM of your script (Global Scope)
+  1591		function hardReset() {
+  1592			console.log("Button clicked, attempting to confirm...");
+       
+  1593			const choice = window.confirm("Wipe all changes and return to the built-in HTML examples?");
+       
+  1594			if (choice) {
+  1595				console.log("User confirmed. Clearing storage...");
+  1596				isResetting = true;
+  1597				localStorage.clear();
+  1598				sessionStorage.clear();
+       
+  1599				const area0 = document.getElementById('scriptArea0');
+  1600				const area1 = document.getElementById('scriptArea1');
+       
+  1601				if(area0) area0.value = "";
+  1602				if(area1) area1.value = "";
+       
+  1603				console.log("Reloading...");
+  1604				window.location.href = window.location.pathname + "?reset=" + Date.now();
+  1605			} else {
+  1606				console.log("User cancelled reset.");
+  1607			}
+  1608		}
+  1609	</script>
+  1610	</body>
+  1611	</html>

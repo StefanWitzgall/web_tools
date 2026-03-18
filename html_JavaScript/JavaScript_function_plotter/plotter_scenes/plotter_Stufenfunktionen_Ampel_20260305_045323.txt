@@ -1,0 +1,70 @@
+fileName: plotter_20260305_045323.txt
+creDateTime: 05.03.2026 04:53:23
+scriptVersion: 0.82
+appearanceMode: dark
+animationSpeed: 2.475
+animationState: on
+tValue: 1.0847499999999881
+tDirection: -1
+% <----- END of METADATA BEGIN of SETUP ----->
+\bpre
+% mapping: physical
+% mapping: non_distorting
+mapping: fill_canvas
+
+\def{pi}{Math.PI}
+\def{sin}{Math.sin}
+\def{cos}{Math.cos}
+\def{abs}{Math.abs}
+\def{sign}{Math.sign}
+\def{exp}{Math.exp}
+\def{sqrt}{Math.sqrt}
+
+animSpeed: [0 3]
+tRange: [-1 7]
+loopMode: sweep
+% sweep once normal cycle
+
+quiet: 
+
+axisXmin: -5
+axisXmax: 6
+axisYmin: -3
+axisYmax: 5
+gridXstep: 1
+gridYstep: 1
+labelsXstep: 1
+labelsYstep: 1
+ordXpos: -4
+absYpos: 0
+xu: 50
+yu: 50
+titleX: x
+titleY: y
+
+\epre
+% <----- END of SETUP BEGIN of FUNCTIONS ----->
+\bfun
+name: frot_1
+term: (sign(abs(t-.5)-.5) === -1 ? 0 : 1)*20+4;
+marker: yes; at: 0; color: red;
+markersize: 40
+\efun
+
+\bfun
+name: fgelb_1
+term: (sign(abs(t-1.5)-1.5) === -1 ? 0 : 1)*20+2;
+color: yellow;
+marker: yes; at: 0; color: red;
+markersize: 40
+\efun
+
+
+\bfun
+name: fgruen_1
+term: (sign(abs(t-5)-1) === -1 ? 0 : 1)*20+0;
+color: #00FF11;
+marker: yes; at: 0; color: red;
+markersize: 40
+\efun
+

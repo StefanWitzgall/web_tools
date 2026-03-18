@@ -1,0 +1,66 @@
+fileName: plotter_20260223_002545.txt
+creDateTime: 23.02.2026 00:25:45
+scriptVersion: 0.70
+appearanceMode: dark
+animationSpeed: 1.5
+animationState: off
+% <----- END of METADATA BEGIN of SETUP ----->
+\bpre
+% mapping: physical
+% mapping: non_distorting
+mapping: fill_canvas
+
+\def{pi}{Math.PI}
+\def{sin}{Math.sin}
+\def{cos}{Math.cos}
+\def{abs}{Math.abs}
+\def{exp}{Math.exp}
+\def{sqrt}{Math.sqrt}
+
+animSpeed: [0 5]
+tRange: [1 2*pi]
+loopMode: normal
+% sweep once normal cycle
+
+axisXmin: -3
+axisXmax: 3
+axisYmin: -5
+axisYmax: 5
+gridXstep: 1
+gridYstep: 1
+labelsXstep: 1
+labelsYstep: .5
+ordXpos: 0
+absYpos: 0
+xu: 50
+yu: 50
+titleX: x
+titleY: y
+
+\epre
+% <----- END of SETUP BEGIN of FUNCTIONS ----->
+\bfun
+name: f
+term: x^4
+color: red
+thickness: 7
+dash: []
+\efun
+
+
+\bfun
+name: f'
+term: 4*x^3
+color: green
+thickness: 7
+dash: []
+\efun
+
+
+\bfun
+name: f''
+term: 12*x^2
+color: blue
+thickness: 7
+dash: []
+\efun

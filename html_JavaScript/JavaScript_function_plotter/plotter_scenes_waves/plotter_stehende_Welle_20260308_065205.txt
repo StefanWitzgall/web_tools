@@ -1,0 +1,82 @@
+fileName: plotter_20260308_065205.txt
+creDateTime: 08.03.2026 06:52:05
+scriptVersion: 0.82
+appearanceMode: light
+animationSpeed: 0.03
+animationState: off
+tValue: 0.2783999999999991
+tDirection: 1
+% <----- END of METADATA BEGIN of SETUP ----->
+\bpre
+% mapping: physical
+% mapping: non_distorting
+% mapping: fill_canvas
+
+\def{pi}{Math.PI}
+\def{sin}{Math.sin}
+\def{cos}{Math.cos}
+\def{abs}{Math.abs}
+\def{exp}{Math.exp}
+\def{sqrt}{Math.sqrt}
+
+animSpeed: [0.03 .5]
+tRange: [0 2000]
+loopMode: sweep
+% sweep once normal cycle
+
+axisXmin: -10
+axisXmax: 10
+axisYmin: -3
+axisYmax: 3
+gridXstep: 1
+gridYstep: 1
+labelsXstep: 1
+labelsYstep: 1
+ordXpos: 0
+absYpos: 0
+xu: 50
+yu: 50
+titleX: x
+titleY: y
+
+\epre
+% <----- END of SETUP BEGIN of FUNCTIONS ----->
+\def{A}{1.0}
+\def{T0}{3.0}
+\def{L}{8}
+
+\bfun name: f1
+term: sin(2*pi*(t/T0+x/L))*A
+thickness: 5
+plot: yes
+color: #00AA00
+domain: -8 8
+\efun
+
+\bfun name: f2
+term: sin(2*pi*(t/T0-(x-0)/L))*A
+thickness: 5
+plot: % yes = true is default
+color: #2222FF
+domain: -8 8
+\efun
+
+\bfun
+term: f2
+marker: yes 
+% at: -9
+domain: [-8 -8] [8 8]
+color: orange; markersize: 5
+plot: yes
+\efun
+
+\bfun name: f12
+term: f1 + f2
+% marker: yes
+% at: 0
+color: #FF2222
+% markerType: bullet
+markerSize: 10
+plot: true
+thickness: 5 domain: -8 8
+\efun
