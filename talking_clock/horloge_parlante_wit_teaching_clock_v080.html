@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Teaching Clock</title>
+	<style>
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			text-align: center;
+			padding: 5px 20px;
+			background-color: #FFFFFF;
+			color: #00AA00;
+			margin: 0;
+		}
+
+		* { box-sizing: border-box; }
+
+		/* Der Container, der alles zusammenhält */
+		.main-container {
+			width: 95%;
+			max-width: 800px;
+			margin: 5px auto;
+			padding: 10px;
+		}
+
+		.nav-link-style {
+			text-decoration: none;
+			color: #0000FF;
+			font-weight: bold;
+			border: 1px solid #0000FF;
+			padding: 5px 10px;
+			border-radius: 5px;
+			background: white;
+			font-size: 14px;
+			width: 140px; /* Einheitliche Breite für beide Buttons */
+			text-align: center;
+			transition: all 0.2s;
+		}
+
+		.nav-link-style:hover {
+			background: #f0f0ff;
+			box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+		}
+
+		#mainTimeInput {
+			width: 450px;
+			width: 100%;
+			box-sizing: border-box; /* Zwingt das Feld, inklusive Padding exakt 450px breit zu sein */
+			font-size: 30px;
+			font-weight: bold;
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			color: #000000;
+
+			/* Zentrierung angleichen */
+			display: block;         /* von inline-block auf block ändern */
+			margin: 20px auto;      /* auto sorgt für die horizontale Zentrierung */
+
+			background: #FFFFFF;
+			padding: 10px 20px;
+			border-radius: 15px;
+			border: 1px solid #000000;
+			text-align: center;
+			box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+			outline: none;
+		}
+
+		#analogClock {
+			width: 100%;           /* Passt sich dem Container an */
+			max-width: 500px;      /* Eine gute Maximalgröße für die Uhr */
+			height: auto;          /* Behält das Seitenverhältnis bei */
+			margin: 0px auto;
+			border-radius: 50%;
+			display: block;
+			/* background-color: white; */
+			/* border: 10px solid #000000; */
+			/* box-shadow: 0 15px 30px rgba(0,0,0,0.1); */
+		}
+
+		.time-display {
+			font-weight: bold;
+			color: #000000;
+			background: white;
+			border: 4px solid #000000;
+			border-radius: 20px;
+			display: inline-block;
+			padding: 10px 40px;
+			font-family: 'Segoe UI', sans-serif;
+			/* Für das Input-Feld in der Teaching Clock wichtig: */
+			text-align: center;
+			outline: none;
+		}
+
+		.button-group {
+			display: flex;
+			justify-content: center;
+			gap: 15px;
+			align-items: flex-start;
+		}
+
+		.button-container {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 8px;
+		}
+
+		button {
+			width: 65%;
+			min-width: 180px;
+			padding: 12px 0px;
+			font-size: 16px;
+			cursor: pointer;
+			border: none;
+			border-radius: 8px;
+			transition: 0.3s;
+			color: white;
+			font-weight: bold;
+			text-align: center;
+		}
+
+		.btn-blue { background-color: #3498db; }
+		.btn-green { background-color: #27ae60; }
+		.btn-orange { background-color: #f39c12; }
+		.btn-red { background-color: #e74c3c; }
+		.btn-star {
+			background: #000000;
+			min-width: 50px !important;
+			width: 50px !important;
+			height: 40px !important;
+			padding: 5px !important;
+			font-size: 20px;
+		}
+
+		button:hover { opacity: 0.9; transform: translateY(-2px); }
+
+		/* Gemeinsame Basis für beide Kästen */
+		.control-panel,
+		.settings-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Handy: untereinander, PC: nebeneinander */
+			gap: 20px;
+			width: 450px;
+			width: 100%;
+			max-width: 800px;
+			margin: 20px auto;
+			background: white;
+			padding: 20px;
+			border-radius: 12px;
+			border: 1px solid #000;
+			text-align: left;
+		}
+
+		#collab-info {
+			width: 100%;
+			max-width: 800px;
+			margin: 0px auto 20px auto;
+			text-align: left;
+			font-size: 13px;
+			color: #000;
+			line-height: 1.6;
+		}
+
+		.voice-controls {
+			display: flex;
+			gap: 10px;
+			align-items: center;
+			margin-top: 5px;
+		}
+
+		.mode-option {
+			font-size: 13px;
+			color: #000000;
+			display: flex;
+			align-items: center;
+			gap: 5px;
+		}
+
+		select, label { display: block; width: 100%; }
+		label { margin-bottom: 5px; font-weight: bold; font-size: 14px; }
+		select { padding: 10px; border-radius: 5px; border: 1px solid #f00; background: white; }
+
+		/* ---------------------------------------------------------- */
+		/* -------------------- Dark Mode Styles -------------------- */
+		/* ---------------------------------------------------------- */
+
+		/* Seite */
+		body.dark-mode {
+			background-color: #000000 !important;
+			color: #00FF00 !important;
+		}
+
+		/* Spezifische Anpassung für die Bedienfelder */
+		body.dark-mode .control-panel,
+		body.dark-mode .mode-option,
+		body.dark-mode .settings-grid,
+		body.dark-mode .time-display {
+			background-color: #000000 !important;
+			color: #ffffff !important;
+			border-color: #444 !important;
+		}
+
+		/* Dark Mode Anpassung für die Links */
+		body.dark-mode .nav-link-style {
+			color: #5dade2;
+			border-color: #5dade2;
+			background: #000;
+		}
+
+		body.dark-mode .status-text { color: #bbb; }
+		body.dark-mode #clock { color: #44FF00 !important; }
+		body.dark-mode .status-red { color: #ff6b6b; }
+		body.dark-mode .status-green { color: #2ecc71; }
+		body.dark-mode #collab-info { color: #888 !important; }
+		body.dark-mode .nav-link { color: #5dade2; border-color: #5dade2; }
+		body.dark-mode select { background: #333; color: white; border-color: #666; }
+	</style>
+</head>
+
+<body>
+	<noscript>
+		<div style="background: #000000; color: white; padding: 20px; text-align: center; font-weight: bold;">
+			⚠️ Achtung: Diese Uhr benötigt JavaScript. Bitte aktiviere es in deinen Browser-Einstellungen.
+		</div>
+	</noscript>
+
+	<div style="position: absolute; top: 15px; right: 20px; display: flex; flex-direction: column; gap: 10px; align-items: flex-end;">
+		<a href="horloge_parlante_wit.html" class="nav-link-style">Analoge Uhr</a>
+		<a href="horloge_parlante_wit_digital.html" class="nav-link-style">Digitale Uhr</a>
+	</div>
+
+	<button id="darkToggle" onclick="toggleDarkMode()"
+		style="position: fixed; bottom: 20px; right: 20px; width: 50px; min-width: 50px;
+		height: 50px; border-radius: 50%; background: #333; color: white; border: 2px solid #555;
+		cursor: pointer; font-size: 24px; z-index: 1000;
+		padding: 0; line-height: 46px; display: flex; align-items: center; justify-content: center;"
+		title="Nachtmodus an/aus">🌙</button>
+
+	<div class="main-container">
+
+		<canvas id="analogClock" width="320" height="320"></canvas>
+
+		<input type="text" id="mainTimeInput" class="time-display" value="10:10" maxlength="8" onkeypress="if(event.key==='Enter') updateFromInput()">
+
+		<div class="control-panel">
+			<div class="button-group">
+				<div class="button-container">
+					<button class="btn-orange" onclick="setRandomTimeOnly()">Zufallszeit</button>
+					<div class="mode-option">
+						<input type="checkbox" id="secToggle">
+						<label style="display:inline; font-weight: normal;" for="secToggle">mit Sekunden</label>
+					</div>
+				</div>
+
+				<div class="button-container">
+					<button class="btn-blue" onclick="updateFromInput()">Anzeigen & Vorlesen</button>
+				</div>
+			</div>
+		</div>
+
+		<div class="settings-grid">
+			<label for="voiceSelect">Wähle eine Stimme:</label>
+			<div class="voice-controls">
+				<select id="voiceSelect" onchange="selectVoice()"></select>
+				<button class="btn-star" onclick="toggleFavorite()" title="Stimme als Favorit speichern/löschen">⭐</button>
+			</div>
+		</div>
+
+		<div id="collab-info">
+			<strong>Gemini & Stefan Witzgall</strong> &mdash; Version: 15. Februar 2026, 10:30&nbsp;Uhr&nbsp;MEZ<br><br>
+			<strong>Hinweise</strong><br>
+			• <b>Eingabe:</b> <code>HH:MM</code> oder <code>HH:MM:SS</code> auch einzifferig.<br>
+			• <b>Vorlesen:</b> <code>Enter</code> oder Klick auf <code>Anzeigen & Vorlesen</code>.<br>
+			• <b>Audio:</b> Sprachausgabe startet nach dem ersten Klick.<br>
+			• <b>Stimmen:</b> System- oder Browserstimmen via Web Speech API.<br>
+			• <b>Favoriten:</b> ⭐ zum Speichern/Löschen der Stimme.<br>
+			• <b>Lizenz:</b> Software bereitgestellt unter der MIT-Lizenz.
+				Keine Haftung für die Funktion dieser Software.<br>
+		</div>
+
+	</div>
+
+	<script>
+		// Feature Check ohne Schleife für bessere Browser-Kompatibilität
+		if (!('speechSynthesis' in window) || !('fetch' in window)) {
+			console.warn("Browser unterstützt benötigte APIs nicht vollständig.");
+		}
+
+		let allVoices = [];
+		let selectedVoice = null;
+		let favoriteVoices = JSON.parse(localStorage.getItem('clockFavorites') || '[]');
+		const canvas = document.getElementById('analogClock');
+		const ctx = canvas.getContext('2d');
+		const timeInput = document.getElementById('mainTimeInput');
+
+		function loadVoices() {
+			let rawVoices = window.speechSynthesis.getVoices();
+			if (rawVoices.length === 0) return;
+
+			allVoices = rawVoices.filter(v => ['de', 'en', 'fr', 'es'].some(l => v.lang.toLowerCase().startsWith(l)));
+			allVoices.sort((a, b) => a.lang.localeCompare(b.lang) || a.name.localeCompare(b.name));
+
+			const selectElement = document.getElementById('voiceSelect');
+			selectElement.innerHTML = '';
+
+			// Gruppe 1: Favoriten
+			const favVoices = allVoices.filter(v => favoriteVoices.includes(v.name));
+			if (favVoices.length > 0) {
+				const favGroup = document.createElement('optgroup');
+				favGroup.label = "⭐ Deine Favoriten";
+				allVoices.forEach((v, i) => {
+					if (favoriteVoices.includes(v.name)) {
+						let opt = new Option(`${v.lang.toUpperCase()} - ${v.name}`, i);
+						favGroup.appendChild(opt);
+					}
+				});
+				selectElement.add(favGroup);
+			}
+
+			// Gruppe 2: Alle Stimmen
+			const allGroup = document.createElement('optgroup');
+			allGroup.label = "Alle verfügbaren Stimmen";
+			allVoices.forEach((v, i) => {
+				let opt = new Option(`${v.lang.toUpperCase()} - ${v.name}`, i);
+				allGroup.appendChild(opt);
+			});
+			selectElement.add(allGroup);
+
+			// WICHTIG: Sicherstellen, dass eine Auswahl existiert
+			if (allVoices.length > 0) {
+				// Falls noch nichts gewählt wurde, nimm die erste verfügbare Stimme
+				if (selectElement.selectedIndex === -1) {
+					selectElement.selectedIndex = 0;
+				}
+				selectVoice(); // Variable synchronisieren
+			}
+
+			// --- ENTSCHEIDENDER TEIL ---
+			// Wir setzen die Variable selectedVoice SOFORT auf den aktuellen Wert des Menüs
+			const currentVoiceName = voiceSelect.value;
+			selectedVoice = allVoices.find(v => v.name === currentVoiceName);
+
+			// Falls das Menü leer war (erster Start), nehmen wir die erste verfügbare Stimme
+			if (!selectedVoice && allVoices.length > 0) {
+				selectedVoice = allVoices[0];
+			}
+		}
+
+
+		function selectVoice() {
+			const selectElement = document.getElementById('voiceSelect');
+			if (selectElement.value !== "") {
+				const idx = parseInt(selectElement.value);
+				selectedVoice = allVoices[idx];
+			}
+		}
+
+		function toggleFavorite() {
+			if (!selectedVoice) return;
+			const name = selectedVoice.name;
+			const index = favoriteVoices.indexOf(name);
+			if (index > -1) {
+				favoriteVoices.splice(index, 1);
+			} else {
+				favoriteVoices.push(name);
+			}
+			localStorage.setItem('clockFavorites', JSON.stringify(favoriteVoices));
+			loadVoices();
+		}
+
+		function getAnnouncementText(dateOrH, langOrM, s, hasSeconds, langCode) {
+			let h, m, lang, isLive;
+
+			// 1. Weiche: Erkennt Horloge Parlante (isLive = true) oder Teaching Clock (isLive = false)
+			if (dateOrH instanceof Date) {
+				h = dateOrH.getHours();
+				m = dateOrH.getMinutes();
+				s = dateOrH.getSeconds();
+				lang = langOrM;
+				hasSeconds = true;
+				isLive = true; // Horloge Parlante Modus
+			} else {
+				h = dateOrH;
+				m = langOrM;
+				lang = langCode;
+				isLive = false; // Teaching Clock Modus
+			}
+
+			// 2. Hilfsfunktion für die deutsche Grammatik
+			const formatDe = (val, unit) => {
+				if (val === 1) {
+					if (unit === "Uhr") return "ein Uhr";
+					if (unit === "Minute") return "eine Minute";
+					if (unit === "Sekunde") return "eine Sekunde";
+				}
+				return `${val} ${unit}${unit === "Uhr" ? "" : "n"}`;
+			};
+
+			// 3. Fremdsprachen mit Intro-Unterscheidung
+			if (lang.startsWith('fr')) {
+				let intro = isLive ? "Au prochain signal sonore, il sera" : "Il est";
+				let base = `${intro} ${h} heures, ${m}`;
+				return hasSeconds ? `${base} et ${s} secondes.` : `${base}.`;
+			}
+			if (lang.startsWith('en')) {
+				let intro = isLive ? "At the next signal, the time will be" : "It is now. ";
+				let base = `${intro} ${h} hours, ${m} minutes`;
+				return hasSeconds ? `${base} and ${s} seconds.` : `${base}.`;
+			}
+			if (lang.startsWith('es')) {
+				let intro = isLive ? "Al siguiente tono serán las" : "Son las";
+				let base = `${intro} ${h} horas, ${m}`;
+				return hasSeconds ? `${base} y ${s} segundos.` : `${base}.`;
+			}
+
+			// 4. DEUTSCH-Logik mit Intro-Unterscheidung
+			const hh = formatDe(h, "Uhr");
+			const intro = isLive ? "Beim nächsten Biep ist es" : "Es ist jetzt";
+
+			// Check für volle Stunde
+			const isFullHour = (m === 0 && (!hasSeconds || s === 0));
+
+			if (isFullHour) {
+				return `${intro} genau ${hh}.`;
+			}
+
+			// Normale Ansage
+			const mm = formatDe(m, "Minute");
+			const ss = formatDe(s, "Sekunde");
+
+			let announcement = `${intro} ${hh}, ${mm}`;
+
+			if (hasSeconds && s !== 0) {
+				announcement += ` und ${ss}.`;
+			} else {
+				announcement += ".";
+			}
+
+			return announcement;
+		}
+
+		function setRandomTimeOnly() {
+			const withSec = document.getElementById('secToggle').checked;
+			const h = Math.floor(Math.random() * 24);
+			const m = Math.floor(Math.random() * 60);
+			let timeStr = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+			if (withSec) {
+				const s = Math.floor(Math.random() * 60);
+				timeStr += `:${s.toString().padStart(2,'0')}`;
+			}
+			timeInput.value = timeStr;
+		}
+
+		function updateFromInput() {
+			const val = timeInput.value.trim();
+			const parts = val.split(':');
+			if (parts.length < 2) {
+				alert("Bitte Format HH:MM oder HH:MM:SS nutzen");
+				return;
+			}
+			const h = parseInt(parts[0]) || 0;
+			const m = parseInt(parts[1]) || 0;
+			const s = parts[2] ? parseInt(parts[2]) : 0;
+			const hasSeconds = (parts.length === 3);
+
+			let formatted = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+			if (hasSeconds) formatted += `:${s.toString().padStart(2,'0')}`;
+			timeInput.value = formatted;
+
+			processDisplay(h, m, s, hasSeconds);
+		}
+
+		function processDisplay(h, m, s, hasSeconds) {
+			// Erstellt ein Datum-Objekt mit der gewünschten Zeit
+			const dummyDate = new Date();
+			dummyDate.setHours(h, m, s);
+
+			drawClock(dummyDate, hasSeconds);
+
+			if (selectedVoice) {
+				window.speechSynthesis.cancel();
+				const text = getAnnouncementText(h, m, s, hasSeconds, selectedVoice.lang);
+				const utt = new SpeechSynthesisUtterance(text);
+				utt.voice = selectedVoice;
+				window.speechSynthesis.speak(utt);
+			}
+		}
+
+		function drawClock(date, hasSeconds = true) {
+			const canvas = document.getElementById('analogClock');
+			const container = canvas.parentElement;
+
+			// Wir nehmen die Breite des Containers, aber maximal 500px
+			const size = Math.min(container.offsetWidth, 500);
+
+			// Nur neu setzen, wenn sich die Größe wirklich geändert hat
+			if (canvas.width !== size) {
+				canvas.width = size;
+				canvas.height = size;
+			}
+
+   			const h = date.getHours();
+			const m = date.getMinutes();
+			const s = date.getSeconds();
+
+			const isDark = document.body.classList.contains('dark-mode');
+			const mainColor = isDark ? "#FFFFFF" : "#000000";
+			const radius = canvas.height / 2;
+			const innerRadius = radius * 0.92;
+
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+			// Digitale Zeit in der unteren Hälfte
+			ctx.save();
+			ctx.translate(radius, radius);
+			ctx.fillStyle = isDark ? "rgba(0, 255, 0, 1)" : "rgba(0, 0, 190, 1)";
+
+			let fontSize = Math.round(radius * 0.18); // Schriftgröße berechnen
+			ctx.font = `bold ${fontSize}px 'Segoe UI', Arial`;
+			ctx.fillStyle = isDark ? "rgba(0, 255, 0, 1)" : "rgba(0, 0, 190, 1)";
+			ctx.textAlign = "center";
+
+			const hours = date.getHours().toString().padStart(2, '0');
+			const minutes = date.getMinutes().toString().padStart(2, '0');
+			const seconds = date.getSeconds().toString().padStart(2, '0');
+			let timeStr = `${hours}:${minutes}`;
+			if (hasSeconds) timeStr += `:${seconds}`;
+
+			ctx.fillText(timeStr, 0, radius * 0.40);
+			// ctx.fillText(`${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`, 0, radius * 0.40);
+			ctx.restore();
+
+			// Datum in der oberen Hälfte
+			// -------------------- ctx.save --------------------
+			ctx.save();
+			ctx.translate(radius, radius);
+			ctx.fillStyle = isDark ? "rgba(0, 255, 0, 1)" : "rgba(0, 0, 190, 1)";
+			fontSize = Math.round(radius * 0.15);
+			ctx.font = `bold ${fontSize}px 'Segoe UI', Arial`;
+
+			ctx.textAlign = "center";
+
+			// Formatiert das Datum (z.B. "13.02.2026")
+			const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+			// Positioniert in der oberen Hälfte (negativer Wert für Y)
+			ctx.fillText(dateStr, 0, -radius * 0.25);
+			ctx.restore();
+			// -------------------- ctx.restore --------------------
+
+			// Markierungen
+			ctx.save();
+			ctx.translate(radius, radius);
+			for (let i = 0; i < 60; i++) {
+				const isHour = i % 5 === 0;
+				ctx.beginPath();
+				ctx.lineWidth = isHour ? 6 : 2;
+				ctx.strokeStyle = mainColor;
+				ctx.moveTo(0, -innerRadius);
+				ctx.lineTo(0, -(innerRadius - (isHour ? 20 : 10)));
+				ctx.stroke();
+				ctx.rotate(Math.PI / 30);
+			}
+			ctx.restore();
+
+			// Innerhalb von drawClock, nach den Markierungen:
+			ctx.save();
+			ctx.translate(radius, radius);
+			ctx.fillStyle = mainColor;
+			fontSize = Math.round(radius * 0.15);
+			ctx.font = `bold ${fontSize}px 'Segoe UI', Arial`;
+			ctx.textAlign = "center";
+			ctx.textBaseline = "middle";
+
+			for (let n = 1; n <= 12; n++) {
+				const angle = n * Math.PI / 6;
+				const dist = innerRadius - fontSize * 1.5; // - 55 war auch gut
+				const x = dist * Math.sin(angle);
+				const y = -dist * Math.cos(angle);
+				ctx.fillText(n.toString(), x, y);
+			}
+			ctx.restore();
+
+			// Zeiger
+			drawHand(radius, (h % 12 + m / 60) * 30, radius * 0.55, 15, mainColor);
+			drawHand(radius, (m + s / 60) * 6, radius * 0.77, 8, mainColor);
+
+			if (hasSeconds) {
+				drawHand(radius, s * 6, radius * 0.90, 2, "#FF0000");
+				ctx.beginPath();
+				ctx.arc(radius, radius, 5, 0, 2 * Math.PI);
+				ctx.fillStyle = "#FF0000";
+				ctx.fill();
+			}
+		}
+
+		function drawHand(radius, angle, length, width, color) {
+			ctx.save();
+			ctx.translate(radius, radius);
+			ctx.rotate(angle * Math.PI / 180);
+			ctx.beginPath();
+			ctx.strokeStyle = color;
+			ctx.lineWidth = width;
+			ctx.lineCap = "butt";
+			ctx.moveTo(0, 10); // Kleiner Überhang nach hinten
+			ctx.lineTo(0, -length);
+			ctx.stroke();
+			ctx.restore();
+		}
+
+		function toggleDarkMode() {
+			// 1. Modus umschalten und speichern
+			const isDark = document.body.classList.toggle('dark-mode');
+			localStorage.setItem('darkMode', isDark);
+			updateDarkBtn(isDark);
+
+			// 2. Aktuelle Zeit aus dem Eingabefeld auslesen
+			const val = timeInput.value.trim();
+			const parts = val.split(':');
+
+			if (parts.length >= 2) {
+				const h = parseInt(parts[0]) || 0;
+				const m = parseInt(parts[1]) || 0;
+				const s = parts[2] ? parseInt(parts[2]) : 0;
+				const hasSeconds = (parts.length === 3);
+
+				// 3. Ein temporäres Datumsobjekt für drawClock erstellen
+				const tempDate = new Date();
+				tempDate.setHours(h, m, s);
+
+				// 4. Die Uhr sofort mit den neuen (Hell/Dunkel) Farben neu zeichnen
+				drawClock(tempDate, hasSeconds);
+			}
+		}
+
+		function updateDarkBtn(isDark) {
+			const btn = document.getElementById('darkToggle');
+			if (btn) btn.innerText = isDark ? '☀️' : '🌙';
+		}
+
+		// Diese Zeilen ganz am Ende des Scripts oder in der Initialisierung einfügen:
+		if (localStorage.getItem('darkMode') === 'true') {
+			document.body.classList.add('dark-mode');
+			updateDarkBtn(true);
+		}
+
+		// Initialisierung beim Laden der Seite
+		window.speechSynthesis.onvoiceschanged = loadVoices;
+		loadVoices();
+
+		// Die Uhr beim Start mit der Standardzeit (z.B. 10:10 Uhr) anzeigen
+		// Die gewünschte Startzeit festlegen
+		const startH = 10;
+		const startM = 10;
+		const startS = 0;
+		const hasSecondsStart = false; // Standardmäßig ohne Sekunden im Feld
+
+		const startTime = new Date();
+		startTime.setHours(startH, startM, startS);
+
+		let timeStr = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')}`;
+		if (hasSecondsStart) {
+			timeStr += `:${startS.toString().padStart(2, '0')}`;
+		}
+		timeInput.value = timeStr;
+
+		drawClock(startTime, hasSecondsStart);
+
+	</script>
+</body>
+</html>
