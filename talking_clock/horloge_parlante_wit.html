@@ -424,6 +424,7 @@
 				selectVoice(); // Variable synchronisieren
 			}
 
+			/*
 			// --- ENTSCHEIDENDER TEIL ---
 			// Wir setzen die Variable selectedVoice SOFORT auf den aktuellen Wert des Menüs
 			const currentVoiceName = voiceSelect.value;
@@ -433,6 +434,25 @@
 			if (!selectedVoice && allVoices.length > 0) {
 				selectedVoice = allVoices[0];
 			}
+			*/
+
+			// --- ENTSCHEIDENDER TEIL (FIXED) ---
+			// const selectElement = document.getElementById('voiceSelect');
+			if (selectElement && selectElement.value !== "") {
+				// Wir holen den Namen der aktuell im Menü gewählten Stimme
+				const currentVoiceName = selectElement.options[selectElement.selectedIndex].text;
+
+				// Wir suchen die Stimme in unserem Array allVoices
+				// Da wir den Index (i) als value im HTML haben, ist es noch einfacher:
+				const idx = parseInt(selectElement.value);
+				selectedVoice = allVoices[idx];
+			}
+
+			// Falls immer noch nichts gewählt ist (erster Start), Fallback auf die erste Stimme
+			if (!selectedVoice && allVoices.length > 0) {
+				selectedVoice = allVoices[0];
+			}
+
 		}
 
 
@@ -613,8 +633,19 @@
 			isSpeakingEnabled = !isSpeakingEnabled;
 			const btn = document.getElementById('audioBtn');
 			const status = document.getElementById('audioStatus');
+
 			if (isSpeakingEnabled) {
 				if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+				// --- DER IPAD FIX: Sprachausgabe "entsperren" ---
+				window.speechSynthesis.cancel();
+				const unlockUtterance = new SpeechSynthesisUtterance("An"); // Ein kurzes Wort
+				unlockUtterance.volume = 0; // Wir machen es lautlos, falls es nicht stören soll
+				if (selectedVoice) unlockUtterance.voice = selectedVoice;
+				window.speechSynthesis.speak(unlockUtterance);
+				// -----------------------------------------------
+
+
 				btn.innerText = "Audio AUS"; btn.className = "btn-green";
 				status.innerText = "Status: Audio EIN"; status.style.color = "#27ae60";
 			} else {
@@ -807,10 +838,12 @@
 					window.speechSynthesis.cancel(); // Kanal leeren
 					window.speechSynthesis.resume(); // Falls Safari im Hintergrund pausiert hat
 
-					window.speechSynthesis.cancel();
 					const targetDate = new Date(now.getTime() + (secondsUntilNext * 1000));
 					const utterance = new SpeechSynthesisUtterance(getAnnouncementText(targetDate, selectedVoice.lang));
 					utterance.voice = selectedVoice;
+
+					// Manche iOS Versionen brauchen das hier, um nicht einzuschlafen:
+					utterance.onend = function() { window.speechSynthesis.cancel(); };
 					window.speechSynthesis.speak(utterance);
 				}
 			}
