@@ -306,14 +306,14 @@
 			<div>
 				<label for="voiceSelect">Wähle eine Stimme:</label>
 				<div class="voice-controls">
-					<select id="voiceSelect" onchange="selectVoice()"></select>
+					<select id="voiceSelect" onchange="selectVoice()" autocomplete="off"></select>
 					<button class="btn-star" onclick="toggleFavorite()" title="Stimme als Favorit speichern">⭐</button>
 				</div>
 			</div>
 		</div>
 
 		<div id="collab-info">
-			<strong>Gemini & Stefan Witzgall</strong> &mdash; Version: 19.03.2026, 21:26&nbsp;Uhr&nbsp;MEZ<br><br>
+			<strong>Gemini & Stefan Witzgall</strong> &mdash; Version: 19.03.2026, 21:49&nbsp;Uhr&nbsp;MEZ<br><br>
 			<strong>Hinweise</strong><br>
 			• <b>Audio:</b> Sprachausgabe startet nach dem ersten Klick.<br>
 			• <b>Stimmen:</b> System- oder Browserstimmen via Web Speech API.<br>
@@ -919,6 +919,22 @@
 			updateClock();
             setInterval(updateClock, 1000);
 		});
+
+
+		// Diese Funktion sorgt dafür, dass kein Menü nach der Benutzung den Fokus behält
+		function setupFocusBrakes() {
+			const selects = document.querySelectorAll('select');
+			selects.forEach(select => {
+				select.addEventListener('change', () => {
+					// Sobald etwas gewählt wurde, nehmen wir den Fokus weg
+					select.blur();
+				});
+			});
+		}
+
+		// Aufruf am Ende deines Skripts
+		setupFocusBrakes();
+
 	</script>
 </body>
 </html>
