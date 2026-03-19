@@ -313,7 +313,7 @@
 		</div>
 
 		<div id="collab-info">
-			<strong>Gemini & Stefan Witzgall</strong> &mdash; Version: 19.03.2026, 18:46&nbsp;Uhr&nbsp;MEZ<br><br>
+			<strong>Gemini & Stefan Witzgall</strong> &mdash; Version: 19.03.2026, 21:26&nbsp;Uhr&nbsp;MEZ<br><br>
 			<strong>Hinweise</strong><br>
 			• <b>Audio:</b> Sprachausgabe startet nach dem ersten Klick.<br>
 			• <b>Stimmen:</b> System- oder Browserstimmen via Web Speech API.<br>
@@ -424,18 +424,6 @@
 				selectVoice(); // Variable synchronisieren
 			}
 
-			/*
-			// --- ENTSCHEIDENDER TEIL ---
-			// Wir setzen die Variable selectedVoice SOFORT auf den aktuellen Wert des Menüs
-			const currentVoiceName = voiceSelect.value;
-			selectedVoice = allVoices.find(v => v.name === currentVoiceName);
-
-			// Falls das Menü leer war (erster Start), nehmen wir die erste verfügbare Stimme
-			if (!selectedVoice && allVoices.length > 0) {
-				selectedVoice = allVoices[0];
-			}
-			*/
-
 			// --- ENTSCHEIDENDER TEIL (FIXED) ---
 			// const selectElement = document.getElementById('voiceSelect');
 			if (selectElement && selectElement.value !== "") {
@@ -448,9 +436,20 @@
 				selectedVoice = allVoices[idx];
 			}
 
+			/*
 			// Falls immer noch nichts gewählt ist (erster Start), Fallback auf die erste Stimme
 			if (!selectedVoice && allVoices.length > 0) {
 				selectedVoice = allVoices[0];
+			}
+			*/
+
+			const savedVoiceName = localStorage.getItem('lastSelectedVoiceName');
+			if (savedVoiceName) {
+				const found = allVoices.find(v => v.name === savedVoiceName);
+				if (found) {
+					selectedVoice = found;
+					selectElement.value = allVoices.indexOf(found);
+				}
 			}
 
 		}
@@ -461,8 +460,11 @@
 			if (selectElement.value !== "") {
 				const idx = parseInt(selectElement.value);
 				selectedVoice = allVoices[idx];
+				// Speichern!
+				localStorage.setItem('lastSelectedVoiceName', selectedVoice.name);
 			}
 		}
+
 
 		function toggleFavorite() {
 			if (!selectedVoice) return;
@@ -614,19 +616,45 @@
 			ctx.restore();
 		}
 
+
 		function playBeep() {
-			if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-			if (audioCtx.state === 'suspended') audioCtx.resume();
-			const osc = audioCtx.createOscillator();
-			const gain = audioCtx.createGain();
-			osc.connect(gain); gain.connect(audioCtx.destination);
-			osc.frequency.value = BEEP_FREQ;
-			const now = audioCtx.currentTime;
-			gain.gain.setValueAtTime(0, now);
-			gain.gain.linearRampToValueAtTime(0.4, now + 0.02);
-			gain.gain.setValueAtTime(0.4, now + BEEP_LENGTH - 0.05);
-			gain.gain.linearRampToValueAtTime(0, now + BEEP_LENGTH);
-			osc.start(now); osc.stop(now + BEEP_LENGTH);
+			if (!isSpeakingEnabled) return;
+
+			// 1. Initialisierung
+			if (!audioCtx) {
+				audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+			}
+
+			// 2. Deine ursprüngliche Sound-Logik in eine Funktion verpackt
+			const startNoise = () => {
+				const osc = audioCtx.createOscillator();
+				const gain = audioCtx.createGain();
+
+				osc.connect(gain);
+				gain.connect(audioCtx.destination);
+
+				// Nutzt deine globalen Variablen BEEP_FREQ und BEEP_LENGTH
+				osc.frequency.value = typeof BEEP_FREQ !== 'undefined' ? BEEP_FREQ : 880;
+				const duration = typeof BEEP_LENGTH !== 'undefined' ? BEEP_LENGTH : 0.2;
+
+				const now = audioCtx.currentTime;
+
+				// Dein exakter Lautstärke-Verlauf (ADSR-Kurve)
+				gain.gain.setValueAtTime(0, now);
+				gain.gain.linearRampToValueAtTime(0.4, now + 0.02);
+				gain.gain.setValueAtTime(0.4, now + duration - 0.05);
+				gain.gain.linearRampToValueAtTime(0, now + duration);
+
+				osc.start(now);
+				osc.stop(now + duration);
+			};
+
+			// 3. Der iPad-Check (Wichtig für die Rückkehr aus den Einstellungen)
+			if (audioCtx.state === 'suspended') {
+				audioCtx.resume().then(startNoise);
+			} else {
+				startNoise();
+			}
 		}
 
 		function handleAudioToggle() {
@@ -644,7 +672,6 @@
 				if (selectedVoice) unlockUtterance.voice = selectedVoice;
 				window.speechSynthesis.speak(unlockUtterance);
 				// -----------------------------------------------
-
 
 				btn.innerText = "Audio AUS"; btn.className = "btn-green";
 				status.innerText = "Status: Audio EIN"; status.style.color = "#27ae60";
