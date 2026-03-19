@@ -313,7 +313,7 @@
 		</div>
 
 		<div id="collab-info">
-			<strong>Gemini & Stefan Witzgall</strong> &mdash; Version: 19. Februar 2026, 09:00&nbsp;Uhr&nbsp;MEZ<br><br>
+			<strong>Gemini & Stefan Witzgall</strong> &mdash; Version: 19.03.2026, 12:18&nbsp;Uhr&nbsp;MEZ<br><br>
 			<strong>Hinweise</strong><br>
 			• <b>Audio:</b> Sprachausgabe startet nach dem ersten Klick.<br>
 			• <b>Stimmen:</b> System- oder Browserstimmen via Web Speech API.<br>
@@ -385,33 +385,63 @@
 		function loadVoices() {
 			let rawVoices = window.speechSynthesis.getVoices();
 			if (rawVoices.length === 0) return;
+
 			allVoices = rawVoices.filter(v => ['de', 'en', 'fr', 'es'].some(l => v.lang.toLowerCase().startsWith(l)));
 			allVoices.sort((a, b) => a.lang.localeCompare(b.lang) || a.name.localeCompare(b.name));
+
 			const selectElement = document.getElementById('voiceSelect');
 			selectElement.innerHTML = '';
 
+			// Gruppe 1: Favoriten
 			const favVoices = allVoices.filter(v => favoriteVoices.includes(v.name));
 			if (favVoices.length > 0) {
 				const favGroup = document.createElement('optgroup');
 				favGroup.label = "⭐ Deine Favoriten";
 				allVoices.forEach((v, i) => {
-					if (favoriteVoices.includes(v.name)) favGroup.appendChild(new Option(`${v.lang.toUpperCase()} - ${v.name}`, i));
+					if (favoriteVoices.includes(v.name)) {
+						let opt = new Option(`${v.lang.toUpperCase()} - ${v.name}`, i);
+						favGroup.appendChild(opt);
+					}
 				});
 				selectElement.add(favGroup);
 			}
+
+			// Gruppe 2: Alle Stimmen
 			const allGroup = document.createElement('optgroup');
 			allGroup.label = "Alle verfügbaren Stimmen";
-			allVoices.forEach((v, i) => allGroup.appendChild(new Option(`${v.lang.toUpperCase()} - ${v.name}`, i)));
+			allVoices.forEach((v, i) => {
+				let opt = new Option(`${v.lang.toUpperCase()} - ${v.name}`, i);
+				allGroup.appendChild(opt);
+			});
 			selectElement.add(allGroup);
+
+			// WICHTIG: Sicherstellen, dass eine Auswahl existiert
 			if (allVoices.length > 0) {
-				if (selectElement.selectedIndex === -1) selectElement.selectedIndex = 0;
-				selectVoice();
+				// Falls noch nichts gewählt wurde, nimm die erste verfügbare Stimme
+				if (selectElement.selectedIndex === -1) {
+					selectElement.selectedIndex = 0;
+				}
+				selectVoice(); // Variable synchronisieren
+			}
+
+			// --- ENTSCHEIDENDER TEIL ---
+			// Wir setzen die Variable selectedVoice SOFORT auf den aktuellen Wert des Menüs
+			const currentVoiceName = voiceSelect.value;
+			selectedVoice = allVoices.find(v => v.name === currentVoiceName);
+
+			// Falls das Menü leer war (erster Start), nehmen wir die erste verfügbare Stimme
+			if (!selectedVoice && allVoices.length > 0) {
+				selectedVoice = allVoices[0];
 			}
 		}
 
+
 		function selectVoice() {
-			const idx = parseInt(document.getElementById('voiceSelect').value);
-			selectedVoice = allVoices[idx];
+			const selectElement = document.getElementById('voiceSelect');
+			if (selectElement.value !== "") {
+				const idx = parseInt(selectElement.value);
+				selectedVoice = allVoices[idx];
+			}
 		}
 
 		function toggleFavorite() {
@@ -772,6 +802,7 @@
 			const secondsUntilNext = interval - (secondsSinceMidnight % interval);
 			if (secondsUntilNext <= LEAD_TIME && secondsUntilNext > (LEAD_TIME - 1)) {
 				if (!window.speechSynthesis.speaking && selectedVoice) {
+					window.speechSynthesis.cancel();
 					const targetDate = new Date(now.getTime() + (secondsUntilNext * 1000));
 					const utterance = new SpeechSynthesisUtterance(getAnnouncementText(targetDate, selectedVoice.lang));
 					utterance.voice = selectedVoice;
