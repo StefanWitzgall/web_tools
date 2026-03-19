@@ -28,7 +28,6 @@
 			--accent-glow: rgba(0, 255, 0, 0.5);
 		}
 
-		/* Header Layout */
 		header {
 			padding: 10px 20px;
 			display: flex;
@@ -39,7 +38,6 @@
 			height: 60px; /* Consistent height */
 			box-sizing: border-box;
 		}
-
 		body.dark-mode header {
 			background: #111;
 			border-color: var(--accent);
@@ -63,15 +61,17 @@
 			text-align: center;
 			text-transform: uppercase;
 		}
-
 		body.dark-mode #collabInfo { color: #fff; }
 
-		/* Sidebar & Main Layout */
+
+		/* 2. The main-layout must fill the remaining space below the header */
 		.main-layout {
 			display: flex;
-			flex: 1;
-			overflow: hidden;
+			flex: 1;          /* This pushes the layout to the bottom of the screen */
+			min-height: 0;    /* Important fix for Firefox/Safari flexbox */
+			overflow: hidden; /* Keeps the Sidebar and Results Panel contained */
 		}
+
 
 		.sidebar {
 			width: 350px;
@@ -81,7 +81,6 @@
 			border-right: 1px solid #888;
 			background: #f9f9f9;
 		}
-
 		body.dark-mode .sidebar { background: #0a0a0a; border-color: var(--accent); }
 
 		textarea {
@@ -95,7 +94,6 @@
 			resize: none;
 			outline: none;
 		}
-
 		body.dark-mode textarea { background: #151515; color: #FFFFFF; border-color: #333; }
 
 		/* Inputs & Buttons */
@@ -123,49 +121,61 @@
 		}
 
 		select {
-			appearance: none;
 			padding-right: 30px;
-			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org' width='12' height='12' fill='%2300AA00' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
-			background-repeat: no-repeat;
 			background-position: calc(100% - 10px) center;
 		}
 
-		body.dark-mode select {
-			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org' width='12' height='12' fill='%2300FF00' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
-		}
 
 		input[type="number"] {
 			width: 90px;
 			text-align: right;
 			padding-right: 25px; /* Important for spin-arrows */
-			text-align: left; padding-right: 8px; /* override previous */
+			text-align: center; padding-right: 8px; /* override previous */
 		}
 
+
 		button {
+			background: #fff; /* White in Light Mode */
+			color: #000;      /* Black text in Light Mode */
 			padding: 0 16px;
 			cursor: pointer;
 			border-radius: 4px;
 			border: 1px solid var(--accent);
-			background: #000;
-			color: #fff;
 			font-weight: bold;
 			display: flex;
 			align-items: center;
 			justify-content: center;
 		}
+		body.dark-mode button {
+			background: #000;
+			color: #fff;
+		}
 
 		button:hover { box-shadow: 0 0 8px var(--accent-glow); }
 
-		/* Results Grid */
 		.results-scroll {
-			flex: 1;
-			padding: 20px;
-			overflow-y: auto;
+			flex: 1;                /* Takes up all remaining vertical space */
+			overflow-y: auto;       /* Adds a vertical scrollbar when content is long */
+			overflow-x: hidden;     /* Prevents horizontal "wobble" */
 			display: flex;
 			flex-wrap: wrap;
 			gap: 15px;
-			align-content: flex-start;
+			padding: 20px;
+			align-content: flex-start; /* Keeps groups aligned at the top */
+
+			/* This is the magic touch for smooth scrolling on iPad/Mobile */
+			-webkit-overflow-scrolling: touch;
 		}
+
+		/* The results-panel needs to fill its half of the layout */
+		/* Key to add a scrollbar to result window if number of groups is large */
+		.results-panel {
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+			min-height: 0;
+		}
+
 
 		.group {
 			width: 210px;
@@ -174,7 +184,6 @@
 			border-radius: 4px;
 			background: #f9f9f9;
 		}
-
 		body.dark-mode .group { background: #111; border-color: var(--accent); color: #fff; }
 
 		h3 {
@@ -185,32 +194,91 @@
 			border-bottom: 0px solid var(--accent-glow);
 		}
 
-		@media print {
-			/* Hide everything except the results */
-			header, .sidebar, #darkToggle { display: none !important; }
 
-			/* Make the results take up the whole page */
-			body, .main-layout, .results-panel, .results-scroll {
-				background: white !important;
-				color: black !important;
+		button[onclick="downloadResults()"] {
+			border-color: #FFA500; /* Orange */
+			color: #FFA500;
+			background: #fff;
+		}
+
+		body.dark-mode button[onclick="downloadResults()"] {
+			background: #000;
+			color: #FFA500;
+		}
+
+
+
+		button[onclick="copyResults()"] {
+			border-color: #00AAFF;
+			color: #00AAFF;
+			background: #fff;
+		}
+		body.dark-mode button[onclick="copyResults()"] {
+			background: #000;
+			color: #FFAAFF;
+		}
+
+		/* Hover effect for all action buttons */
+		button:hover {
+			background-color: var(--accent-glow);
+			color: #fff;
+		}
+
+
+		/* Specific style for the Print button to stand out */
+		button[onclick="window.print()"] {
+			border-color: #007bff; /* Professional Blue */
+			color: #007bff;
+			background: #fff;
+		}
+
+		body.dark-mode button[onclick="window.print()"] {
+			background: #000;
+			color: #55aaff; /* Lighter blue for dark mode */
+			border-color: #55aaff;
+		}
+
+		@media print {
+			/* 1. Force the background to white and text to black for the whole page */
+			body, html, .main-layout, .results-panel, .results-scroll {
+				background-color: #ffffff !important;
+				color: #000000 !important;
 				overflow: visible !important;
 				display: block !important;
+				height: auto !important;
 			}
 
+			/* 2. Hide UI elements */
+			header, .sidebar, #darkToggle, #theme-toggle {
+				display: none !important;
+			}
+
+			/* 3. Force Groups to be Black on White */
 			.group {
-				border: 1px solid #000 !important;
-				break-inside: avoid; /* Don't split a group across two pages */
-				margin-bottom: 20px;
-				width: 40% !important;
+				background-color: #ffffff !important;
+				color: #000000 !important;
+				border: 1.5pt solid #000000 !important; /* Thick enough for portrait */
+				break-inside: avoid;
+				margin: 10px;
+				width: 45% !important;
+				display: inline-block !important;
+				vertical-align: top;
+				/* Ensure the printer doesn't try to 'invert' things */
+				-webkit-print-color-adjust: economy !important;
+				print-color-adjust: economy !important;
+			}
+
+			/* 4. Ensure headers inside groups are also black */
+			h3 {
+				color: #000000 !important;
+				border-bottom: 1pt solid #000000 !important;
 			}
 		}
     </style>
 </head>
 <body class="dark-mode">
-
 	<header>
 		<div style="font-weight: bold; color: var(--accent);">GROUP GENERATOR</div>
-
 		<div class="controls-bar">
 			<select id="mode" style="min-width:180px;">
 				<option value="size">Target Group Size</option>
@@ -219,12 +287,15 @@
 			<input type="number" id="targetValue" value="3" min="1">
 			<button onclick="generateGroups()">GENERATE</button>
 			<button onclick="clearResults()" style="border-color: #FF0;">CLEAR</button>
+			<button onclick="window.print()" style="border-color: #00f;">PRINT 🖨️</button>
+			<button onclick="copyResults(this)" style="border-color: #00AAFF;">COPY 📋</button>
+			<button onclick="downloadResults()" style="border-color: #FFA500;">SAVE .TXT 💾</button>
+
 		</div>
 
-		<!-- Your Plotter Signature Block -->
 		<div id="collabInfo">
-			<span>v012</span>
-			<span style="font-weight: 500; margin-top: 2px;">WIT 10.03.2026, 18:34</span>
+			<!-- <span>v012</span> -->
+			<span style="font-weight: 500; margin-top: 2px;">v012 WIT 19.03.2026, 04:48</span>
 		</div>
 
 		<button id="darkToggle" onclick="toggleTheme()">🌙</button>
@@ -242,11 +313,9 @@
 			<textarea id="nameList" oninput="updateCount()" placeholder="Enter names (one per line)..."></textarea>
 		</div>
 
-        <!-- Results Panel (Right): Controls + Output -->
+        <!-- Results Panel (Right): Output -->
         <div class="results-panel">
-            <div class="results-scroll" id="output">
-                <!-- Groups will appear here -->
-            </div>
+			<div id="output" class="results-scroll"></div>
         </div>
     </div>
 
@@ -341,6 +410,110 @@
 				groupDiv.innerHTML = `<h3>Group ${index + 1}</h3>${chunk.join('<br>')}`;
 				output.appendChild(groupDiv);
 			});
+		}
+
+		function copyResults(btn) { // Added 'btn' here
+			const groups = document.querySelectorAll('.group');
+			if (groups.length === 0) {
+				alert("No groups to copy!");
+				return;
+			}
+
+			let textToCopy = "";
+			groups.forEach((group) => {
+				textToCopy += group.innerText + "\r\n\r\n";
+			});
+
+			navigator.clipboard.writeText(textToCopy).then(() => {
+				// Visual feedback using the passed 'btn'
+				const originalText = btn.innerText;
+				btn.innerText = "COPIED! ✅";
+				setTimeout(() => btn.innerText = originalText, 2000);
+			}).catch(err => {
+				alert("Error copying to clipboard: " + err);
+			});
+		}
+
+		function downloadResults_simple_and_sure() {
+			const groups = document.querySelectorAll('.group');
+			if (groups.length === 0) {
+				alert("No groups to save!");
+				return;
+			}
+
+			let content = "RANDOM GROUP GENERATOR RESULTS\r\n";
+			content += "Generated on: " + new Date().toLocaleString() + "\r\n";
+			content += "--------------------------------\r\n\r\n";
+
+			groups.forEach((group) => {
+				content += group.innerText + "\r\n";
+				content += "--------------------------------\r\n";
+			});
+
+			// Create a virtual "file" and download it
+			const blob = new Blob([content], { type: "text/plain" });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+
+			a.href = url;
+			a.download = "group_results.txt";
+			document.body.appendChild(a);
+			a.click();
+
+			// Clean up
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+		}
+
+
+		// More advanced, let the user edit the file name:
+		function downloadResults() {
+			const groups = document.querySelectorAll('.group');
+			if (groups.length === 0) {
+				alert("No groups to save!");
+				return;
+			}
+
+			// 1. Generate Timestamp (YYYYMMDD_HHMMSS)
+			const now = new Date();
+			const ts = now.getFullYear() +
+					   String(now.getMonth() + 1).padStart(2, '0') +
+					   String(now.getDate()).padStart(2, '0') + "_" +
+					   String(now.getHours()).padStart(2, '0') +
+					   String(now.getMinutes()).padStart(2, '0') +
+					   String(now.getSeconds()).padStart(2, '0');
+
+			const defaultName = `random_groups_${ts}.txt`;
+
+			// 2. Ask user for a filename (they can edit it or just hit Enter)
+			const fileName = prompt("Enter filename:", defaultName);
+
+			// If user hits 'Cancel', stop the download
+			if (fileName === null) return;
+
+			// 3. Prepare the content
+			let content = "RANDOM GROUP GENERATOR\r\n";
+			content += "Generated: " + now.toLocaleString() + "\r\n";
+			content += "--------------------------------\r\n\r\n";
+
+			groups.forEach((group) => {
+				content += group.innerText + "\r\n";
+				content += "--------------------------------\r\n";
+			});
+
+			// 4. Trigger the download
+			const blob = new Blob([content], { type: "text/plain" });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+
+			a.href = url;
+			a.download = fileName.endsWith(".txt") ? fileName : fileName + ".txt";
+			document.body.appendChild(a);
+			a.click();
+
+			// Clean up
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
 		}
     </script>
 </body>
