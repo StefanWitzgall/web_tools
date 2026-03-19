@@ -610,18 +610,18 @@
 		}
 
 		function handleAudioToggle() {
-			isSpeakingEnabled = !isSpeakingEnabled;
-			const btn = document.getElementById('audioBtn');
-			const status = document.getElementById('audioStatus');
-			if (isSpeakingEnabled) {
-				if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-				btn.innerText = "Audio AUS"; btn.className = "btn-green";
-				status.innerText = "Status: Audio EIN"; status.style.color = "#27ae60";
-			} else {
-				window.speechSynthesis.cancel();
-				btn.innerText = "Audio EIN"; btn.className = "btn-red";
-				status.innerText = "Status: Audio AUS"; status.style.color = "#e74c3c";
-			}
+		    isSpeakingEnabled = !isSpeakingEnabled;
+		    if (isSpeakingEnabled) {
+		        if (audioCtx.state === 'suspended') audioCtx.resume();
+		        
+		        // iPad "entsperren"
+		        window.speechSynthesis.cancel();
+		        const startMsg = new SpeechSynthesisUtterance("Audio an");
+		        startMsg.voice = selectedVoice;
+		        window.speechSynthesis.speak(startMsg);
+		        
+		        playBeep();
+		    }
 		}
 
 		async function toggleSync(onlyUpdate = false) {
@@ -790,27 +790,48 @@
 		}
 
 		function updateClock() {
-			const now = new Date(Date.now() + timeOffset);
-			document.getElementById('clock').innerText = now.toLocaleTimeString('de-DE');
-			drawClock(now, true); // Immer mit Sekunden
-
-			if (!isSpeakingEnabled) return;
-			const interval = parseInt(document.getElementById('intervalSelect').value);
-			const secondsSinceMidnight = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-			if (secondsSinceMidnight % interval === 0) playBeep();
-
-			const secondsUntilNext = interval - (secondsSinceMidnight % interval);
-			if (secondsUntilNext <= LEAD_TIME && secondsUntilNext > (LEAD_TIME - 1)) {
-				if (!window.speechSynthesis.speaking && selectedVoice) {
-					window.speechSynthesis.cancel();
-					const targetDate = new Date(now.getTime() + (secondsUntilNext * 1000));
-					const utterance = new SpeechSynthesisUtterance(getAnnouncementText(targetDate, selectedVoice.lang));
-					utterance.voice = selectedVoice;
-					window.speechSynthesis.speak(utterance);
-				}
-			}
+		    const now = new Date(Date.now() + timeOffset);
+		    
+		    // 1. Zeichnen (Analog oder Digital)
+		    if (typeof drawClock === "function") {
+		        drawClock(now, true);
+		    }
+		    const clockEl = document.getElementById('clock');
+		    if (clockEl) clockEl.innerText = now.toLocaleTimeString('de-DE');
+		
+		    // 2. Audio-Logik
+		    if (!isSpeakingEnabled) return;
+		
+		    const interval = parseInt(document.getElementById('intervalSelect').value);
+		    const secondsSinceMidnight = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+		    
+		    // Piep-Ton (funktioniert ja schon)
+		    if (secondsSinceMidnight % interval === 0) playBeep();
+		
+		    const secondsUntilNext = interval - (secondsSinceMidnight % interval);
+		    
+		    // 3. Sprach-Ansage vorbereiten
+		    if (secondsUntilNext <= LEAD_TIME && secondsUntilNext > (LEAD_TIME - 1)) {
+		        if (selectedVoice) {
+		            // --- DER IPAD-EXTREME-FIX ---
+		            window.speechSynthesis.cancel(); // 1. Alten Müll löschen
+		            window.speechSynthesis.resume(); // 2. Falls Safari eingeschlafen ist, aufwecken
+		            
+		            const targetDate = new Date(now.getTime() + (secondsUntilNext * 1000));
+		            const text = getAnnouncementText(targetDate, selectedVoice.lang);
+		            const utterance = new SpeechSynthesisUtterance(text);
+		            
+		            utterance.voice = selectedVoice;
+		            // Manche iPads brauchen eine explizite Lautstärke
+		            utterance.volume = 1; 
+		            
+		            window.speechSynthesis.speak(utterance);
+		        }
+		    }
 		}
-
+		
+		
+		
 		function toggleDarkMode() {
 			const isDark = document.body.classList.toggle('dark-mode');
 			localStorage.setItem('darkMode', isDark);
