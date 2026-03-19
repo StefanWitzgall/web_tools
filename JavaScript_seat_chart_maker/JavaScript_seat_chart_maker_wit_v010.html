@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Seating Arranger v010</title>
+	<style>
+		:root { --accent: #00AA00; --accent-glow: rgba(0, 170, 0, 0.3); }
+
+		body {
+			font-family: 'Segoe UI', sans-serif; margin: 0; height: 100vh;
+			display: flex; flex-direction: column; overflow: hidden;
+			transition: 0.3s; background: #fff; color: #333;
+		}
+		body.dark-mode { background: #000; color: #FFFF00; --accent: #00FF00; }
+
+		header {
+			padding: 10px 20px; display: flex; align-items: center; gap: 20px;
+			border-bottom: 1px solid #888; background: #eee; height: 60px; box-sizing: border-box;
+		}
+		body.dark-mode header { background: #111; border-color: var(--accent); }
+
+		.controls-bar { display: flex; gap: 10px; align-items: center; margin-right: auto; }
+
+		#collabInfo {
+			display: flex; flex-direction: column; align-items: center;
+			font-size: 9px; width: 110px; line-height: 1.1; text-transform: uppercase;
+		}
+
+		.main-layout { display: flex; flex: 1; overflow: hidden; }
+
+		/* Sidebar: The Waiting Room */
+		.sidebar {
+			width: 300px; display: flex; flex-direction: column; padding: 15px;
+			border-right: 1px solid #888; background: #f9f9f9;
+		}
+		body.dark-mode .sidebar { background: #0a0a0a; border-color: var(--accent); }
+
+		#waitingRoom {
+			flex: 1; border: 1px solid #ccc; padding: 10px; overflow-y: auto;
+			display: flex; flex-wrap: wrap; align-content: flex-start; gap: 5px;
+			background: rgba(0,0,0,0.03); border-radius: 4px;
+		}
+
+		/* The Classroom Canvas */
+		.classroom-panel { flex: 1; padding: 20px; overflow-y: auto; position: relative; }
+
+		.grid-container {
+			display: grid;
+			gap: 15px;
+			padding: 20px;
+			/* Removed auto-fill so it respects the JS gridTemplateColumns */
+		}
+
+
+		/* Default state (In Sidebar / Waiting Room) */
+		.person {
+			padding: 8px 12px;
+			background: var(--accent); /* Green */
+			color: #000;
+			border-radius: 4px;
+			cursor: grab;
+			font-size: 13px;
+			font-weight: bold;
+			user-select: none;
+			width: 100px;
+			text-align: center;
+			transition: background 0.3s, color 0.3s;
+		}
+		.person:active { cursor: grabbing; }
+
+
+
+		/* Seated state (Inside the Grid) */
+		.person.seated {
+			background: transparent;
+			color: inherit; /* Takes Yellow in Dark Mode, Black in Light Mode */
+			border: 0px solid var(--accent);
+			box-shadow: none;
+		}
+
+		body.dark-mode .person.seated {
+			color: #FFFF00; /* Match your plotter's yellow text */
+			background: #111;
+		}
+
+
+
+		/* Drop Zones (Seats) */
+		.seat {
+			width: 120px; height: 70px; border: 2px dashed #888;
+			border-radius: 8px; display: flex; align-items: center;
+			justify-content: center; background: rgba(0,0,0,0.05); transition: 0.2s;
+		}
+		body.dark-mode .seat { background: rgba(255,255,255,0.05); }
+		.seat.drag-over { border-color: var(--accent); background: var(--accent-glow); transform: scale(1.05); }
+
+		button {
+			padding: 8px 16px; cursor: pointer; border-radius: 4px;
+			border: 1px solid var(--accent); background: #000; color: #fff; font-weight: bold;
+		}
+
+		textarea { height: 80px; width: 100%; margin-bottom: 10px; font-family: monospace; }
+
+		/* Trash Can */
+		#trash {
+			position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px;
+			background: #000000; border-radius: 50%; display: flex; align-items: center;
+			justify-content: center; font-size: 24px; color: white; cursor: default;
+			box-shadow: 0 4px 10px rgba(0,0,0,0.3); opacity: 0.7;
+		}
+		#trash.drag-over { transform: scale(1.2); background: #ff0000; opacity: 1; }
+
+		@media print {
+			/* 1. Hide UI Chrome */
+			header, .sidebar, #darkToggle, #trash, .controls-bar {
+				display: none !important;
+			}
+
+			/* 2. Reset Layout Containers */
+			body, .main-layout, .classroom-panel {
+				background: white !important;
+				color: black !important;
+				display: block !important;
+				width: 100% !important;
+				height: auto !important;
+				overflow: visible !important;
+				margin: 0 !important;
+				padding: 0 !important;
+			}
+
+			/* 3. Force Grid Preservation */
+			.grid-container {
+				display: grid !important;
+				/* !important overrides ensure the JS-injected values stick */
+				gap: 10px !important;
+				justify-content: start !important;
+				margin: 20px auto !important;
+				/* We force the grid to not wrap or scale down */
+				page-break-inside: avoid;
+			}
+
+			/* 4. Seat styling for paper */
+			.seat {
+				border: 1px solid #000 !important;
+				background: #fff !important;
+				width: 120px !important;
+				height: 70px !important;
+				display: flex !important;
+				box-sizing: border-box !important;
+			}
+
+			/* Ensure the name itself has no extra box/frame on paper */
+			.person.seated {
+				background: transparent !important;
+				border: none !important;      /* Removes the "waiting room" frame */
+				box-shadow: none !important;
+				color: #000 !important;      /* Sharp black text for printing */
+				width: auto !important;      /* Let it fit naturally in the seat */
+				padding: 0 !important;       /* Remove padding so it doesn't crowd the seat */
+				font-weight: bold !important;
+			}
+
+			/* The seat itself provides the only frame */
+			.seat {
+				border: 1px solid #000 !important;
+				background: #fff !important;
+				display: flex !important;
+				align-items: center !important;
+				justify-content: center !important;
+			}
+
+			/* Hide the coordinate labels (1-1, 1-2) if you only want names */
+			/* Or keep them faint: */
+			.seat span {
+
+
+			/* Ensure the coordinate labels remain visible but faint */
+			.seat span {
+				color: #888 !important;
+				opacity: 0.5 !important;
+			}
+		}
+
+
+	</style>
+</head>
+<body class="dark-mode">
+
+<header>
+	<div style="font-weight: bold; color: var(--accent);">SEAT ARRANGER</div>
+
+	<div class="controls-bar">
+		<label>Rows:</label> <input type="number" id="rows" value="4" min="1" style="width:45px;">
+		<label>Columns:</label> <input type="number" id="cols" value="4" min="1" style="width:45px;">
+		<button onclick="initSeats()">UPDATE GRID</button>
+		<button onclick="clearGrid()" style="border-color: #FFA500; color: #FFA500; background: transparent; font-size: 10px;">CLEAR GRID</button>
+		<button onclick="exportToImage()" style="border-color: #FF00FF; color: #FF00FF; background: transparent; font-size: 10px;">📸 PRINT</button>
+		<button onclick="saveSession()">SAVE</button>
+		<button onclick="document.getElementById('fileLoad').click()">LOAD</button>
+		<input type="file" id="fileLoad" style="display:none" onchange="loadSession(event)">
+	</div>
+
+
+	<div id="collabInfo"><span>v010 WIT</span><span style="font-weight: 500;">09.03.2026 22:18</span></div>
+	<button id="darkToggle" onclick="toggleTheme()">🌙</button>
+</header>
+
+<div class="main-layout">
+	<div class="sidebar" ondragover="event.preventDefault()" ondrop="drop(event)">
+		<label style="font-size: 12px; margin-bottom: 5px;">IMPORT NAMES:</label>
+		<textarea id="importArea" placeholder="Paste names..."></textarea>
+		<button onclick="importNames()" style="width:100%; margin-bottom:10px;">ADD TO POOL</button>
+
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+			<label style="font-size: 12px;">WAITING ROOM:</label>
+			<button onclick="clearWaitingRoom()" style="font-size: 9px; padding: 2px 6px;
+				border-color: #ff4444; color: #ff4444; background: transparent;">EMPTY POOL</button>
+		</div>
+		<div id="waitingRoom"></div>
+	</div>
+
+	<div class="classroom-panel">
+		<div class="grid-container" id="grid"></div>
+	</div>
+</div>
+
+<div id="trash" ondragover="event.preventDefault()" ondrop="removeElement(event)"
+	ondragenter="this.classList.add('drag-over')"
+	ondragleave="this.classList.remove('drag-over')">🗑️</div>
+
+<script>
+	let draggedId = null;
+
+	function toggleTheme() {
+		const isDark = document.body.classList.toggle('dark-mode');
+		document.getElementById('darkToggle').innerText = isDark ? '☀️' : '🌙';
+	}
+
+	function importNames() {
+		const text = document.getElementById('importArea').value;
+		const names = text.split('\n').map(n => n.trim()).filter(n => n !== "");
+		const room = document.getElementById('waitingRoom');
+
+		names.forEach(name => {
+			const div = document.createElement('div');
+			div.className = 'person';
+			div.innerText = name;
+			div.draggable = true;
+			div.id = 'p-' + Math.random().toString(36).substr(2, 9);
+			div.ondragstart = drag;
+			room.appendChild(div);
+		});
+		document.getElementById('importArea').value = "";
+	}
+
+	function initSeats() {
+		const rows = parseInt(document.getElementById('rows').value);
+		const cols = parseInt(document.getElementById('cols').value);
+		const grid = document.getElementById('grid');
+
+		// 1. COLLECT currently seated people and their positions
+		const savedPeople = [];
+		const existingSeats = grid.querySelectorAll('.seat');
+		existingSeats.forEach((seat, index) => {
+			const person = seat.querySelector('.person');
+			if (person) {
+				savedPeople.push({
+					element: person,
+					oldIndex: index
+				});
+			}
+		});
+
+		// 2. REBUILD the Grid
+		grid.style.gridTemplateColumns = `repeat(${cols}, 130px)`;
+		grid.innerHTML = "";
+
+		for(let i = 0; i < (rows * cols); i++) {
+			const seat = document.createElement('div');
+			seat.className = 'seat';
+			const r = Math.floor(i / cols) + 1;
+			const c = (i % cols) + 1;
+			seat.innerHTML = `<span style="opacity:0.2; font-size:9px;">${r}-${c}</span>`;
+
+			seat.ondragover = allowDrop;
+			seat.ondragleave = leave;
+			seat.ondrop = drop;
+			grid.appendChild(seat);
+
+			// 3. RESTORE person if they were in this index (and it still exists)
+			const match = savedPeople.find(p => p.oldIndex === i);
+			if (match) {
+				seat.innerHTML = ""; // Clear label
+				seat.appendChild(match.element);
+			}
+		}
+
+		// 4. EVACUATE survivors: If grid shrank, move "lost" people to waiting room
+		savedPeople.forEach(p => {
+			if (p.oldIndex >= (rows * cols)) {
+				p.element.classList.remove('seated');
+				document.getElementById('waitingRoom').appendChild(p.element);
+			}
+		});
+	}
+
+	function clearGrid() {
+		if(confirm("Move all seated people back to the waiting room?")) {
+			const seated = document.querySelectorAll('.grid-container .person');
+			const room = document.getElementById('waitingRoom');
+			seated.forEach(p => {
+				p.classList.remove('seated');
+				room.appendChild(p);
+			});
+			initSeats(); // Refresh labels
+		}
+	}
+
+
+
+	function clearWaitingRoom() {
+		if(confirm("Empty the entire waiting room?")) {
+			document.getElementById('waitingRoom').innerHTML = "";
+		}
+	}
+
+
+	function drag(ev) {
+		draggedId = ev.target.id;
+		ev.dataTransfer.setData("text", ev.target.id);
+	}
+
+	function allowDrop(ev) {
+		ev.preventDefault();
+		ev.currentTarget.classList.add('drag-over');
+	}
+
+	function leave(ev) {
+		ev.currentTarget.classList.remove('drag-over');
+	}
+
+	function drop(ev) {
+		ev.preventDefault();
+		const target = ev.currentTarget;
+		target.classList.remove('drag-over');
+
+		const data = ev.dataTransfer.getData("text");
+		const el = document.getElementById(data);
+
+		if (target.classList.contains('seat')) {
+			// --- DROPPING INTO A SEAT ---
+			const existing = target.querySelector('.person');
+			if (existing) {
+				// Return existing person to sidebar and make them green again
+				existing.classList.remove('seated');
+				document.getElementById('waitingRoom').appendChild(existing);
+			}
+
+			target.innerHTML = ""; // Clear the "Row-Col" label
+			el.classList.add('seated'); // Remove green background
+			target.appendChild(el);
+
+		} else if (target.classList.contains('sidebar')) {
+			// --- DRAGGING BACK TO SIDEBAR ---
+			el.classList.remove('seated'); // Turn green again
+			document.getElementById('waitingRoom').appendChild(el);
+		}
+	}
+
+
+	function saveSession() {
+		const rows = document.getElementById('rows').value;
+		const cols = document.getElementById('cols').value;
+		const mode = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+
+		// 1. Gather Seated Data: [seatIndex, name]
+		const seatedData = [];
+		document.querySelectorAll('.grid-container .seat').forEach((seat, idx) => {
+			const p = seat.querySelector('.person');
+			if (p) seatedData.push(`${idx}:${p.innerText}`);
+		});
+
+		// 2. Gather Waiting Room Data
+		const waitingData = [];
+		document.querySelectorAll('#waitingRoom .person').forEach(p => {
+			waitingData.push(p.innerText);
+		});
+
+		const now = new Date();
+		const ts = `${now.getDate().toString().padStart(2,'0')}.${(now.getMonth()+1).toString().padStart(2,'0')}.${now.getFullYear()} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+		const dateStub = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+		const prettyName = `seating_${dateStub}.txt`;
+
+		// Assembly using your Plotter Markers
+		const metadata = [
+			`fileName: ${prettyName}`,
+			`creDateTime: ${ts}`,
+			`scriptVersion: 0.12`,
+			`appearanceMode: ${mode}`,
+			`gridRows: ${rows}`,
+			`gridCols: ${cols}`
+		].join('\n');
+
+		const metaToPool = `% <----- END of METADATA BEGIN of POOL ----->`;
+		const poolToGrid = `% <----- END of POOL BEGIN of GRID ----->`;
+
+		const fullContent = `${metadata}\n${metaToPool}\n${waitingData.join('\n')}\n${poolToGrid}\n${seatedData.join('\n')}`;
+
+		const blob = new Blob([fullContent], { type: 'text/plain' });
+		const a = document.createElement('a');
+		a.href = URL.createObjectURL(blob);
+		a.download = prettyName;
+		a.click();
+	}
+
+	function loadSession(event) {
+		const file = event.target.files[0];
+		if (!file) return;
+
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			const content = e.target.result;
+			const sections = content.split(/% <----- .* ----->/);
+
+			if (sections.length >= 3) {
+				const metadataStr = sections[0].trim();
+				const poolStr     = sections[1].trim();
+				const gridStr     = sections[2].trim();
+
+				const getMeta = (key) => {
+					const match = metadataStr.match(new RegExp(`${key}:\\s*(.+)`));
+					return match ? match[1].trim() : null;
+				};
+
+				// 1. Restore UI Mode
+				if (getMeta('appearanceMode') === 'dark') document.body.classList.add('dark-mode');
+				else document.body.classList.remove('dark-mode');
+
+				// 2. Setup Grid
+				document.getElementById('rows').value = getMeta('gridRows') || 4;
+				document.getElementById('cols').value = getMeta('gridCols') || 4;
+				initSeats();
+
+				// 3. Restore Waiting Room
+				const room = document.getElementById('waitingRoom');
+				room.innerHTML = "";
+				poolStr.split('\n').filter(n => n.trim()).forEach(name => {
+					const div = createPersonElement(name.trim());
+					room.appendChild(div);
+				});
+
+				// 4. Restore Grid Positions
+				const seats = document.querySelectorAll('.grid-container .seat');
+				gridStr.split('\n').filter(n => n.trim()).forEach(line => {
+					const [idx, name] = line.split(':');
+					const seatIndex = parseInt(idx);
+					if (seats[seatIndex]) {
+						const div = createPersonElement(name.trim());
+						div.classList.add('seated');
+						seats[seatIndex].innerHTML = ""; // remove label
+						seats[seatIndex].appendChild(div);
+					}
+				});
+			}
+		};
+		reader.readAsText(file);
+	}
+
+	// Helper to keep person creation consistent
+	function createPersonElement(name) {
+		const div = document.createElement('div');
+		div.className = 'person';
+		div.innerText = name;
+		div.draggable = true;
+		div.id = 'p-' + Math.random().toString(36).substr(2, 9);
+		div.ondragstart = drag;
+		return div;
+	}
+
+
+
+	function exportToImage() {
+		// In 2026, most users prefer a PDF or System Screenshot.
+		// This triggers a clean view for saving.
+		window.print();
+	}
+
+
+	function removeElement(ev) {
+		ev.preventDefault();
+		const data = ev.dataTransfer.getData("text");
+		const el = document.getElementById(data);
+		if (el) el.remove();
+		ev.currentTarget.classList.remove('drag-over');
+	}
+
+	// Initialize default seats
+	window.onload = initSeats;
+</script>
+</body>
+</html>

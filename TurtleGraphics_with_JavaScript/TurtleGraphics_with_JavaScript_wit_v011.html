@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS Turtle Graphics Interaktiv</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        canvas {
+            background-color: #fff;
+            border: 1px solid #ccc;
+        }
+        textarea {
+            width: 250px;
+            height: 300px;
+            font-family: monospace;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: none;
+        }
+        button {
+            padding: 10px;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #34495e;
+        }
+        .help {
+            font-size: 0.85em;
+            color: #666;
+            max-width: 250px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Turtle Graphics Parser</h1>
+
+    <div class="container">
+        <div class="controls">
+            <textarea id="commandInput" placeholder="Befehle eingeben...">fd 100
+rt 90
+fd 100
+rt 90
+fd 100
+rt 90
+fd 100</textarea>
+            <button id="runBtn">Zeichnen!</button>
+            <button id="clearBtn" style="background-color: #e74c3c;">Reset</button>
+            
+            <div class="help">
+                <strong>Befehle:</strong><br>
+                <code>fd [x]</code> - Vorwärts<br>
+                <code>rt [x]</code> - Rechts drehen<br>
+                <code>lt [x]</code> - Links drehen<br>
+                <code>pu</code> - Stift hoch (Pen Up)<br>
+                <code>pd</code> - Stift runter (Pen Down)<br>
+                <code>color [name]</code> - Farbe (z.B. red)
+            </div>
+        </div>
+
+        <canvas id="turtleCanvas" width="500" height="500"></canvas>
+    </div>
+
+	<script>
+		const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+		class Turtle {
+			constructor(canvasId) {
+				this.canvas = document.getElementById(canvasId);
+				this.ctx = this.canvas.getContext('2d');
+				this.speed = 2;
+				this.reset();
+			}
+
+			async forward(distance) {
+				const rad = (this.angle * Math.PI) / 180;
+				const totalSteps = Math.abs(distance / this.speed) || 1;
+				const stepX = (distance / totalSteps) * Math.cos(rad);
+				const stepY = (distance / totalSteps) * Math.sin(rad);
+
+				for (let i = 0; i < totalSteps; i++) {
+					const nextX = this.x + stepX;
+					const nextY = this.y + stepY;
+					if (this.penDown) {
+						this.ctx.beginPath();
+						this.ctx.moveTo(this.x, this.y);
+						this.ctx.lineTo(nextX, nextY);
+						this.ctx.stroke();
+					}
+					this.x = nextX;
+					this.y = nextY;
+					await sleep(10); 
+				}
+			}
+
+			reset() {
+				this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+				this.x = this.canvas.width / 2;
+				this.y = this.canvas.height / 2;
+				this.angle = -90;
+				this.penDown = true;
+				this.ctx.strokeStyle = 'black';
+				this.ctx.lineWidth = 2;
+				this.ctx.lineCap = 'round';
+			}
+
+			right(degrees) { this.angle += degrees; }
+			left(degrees) { this.angle -= degrees; }
+			setPen(isDown) { this.penDown = isDown; }
+			setColor(color) { this.ctx.strokeStyle = color; }
+		} // <--- HIER endet die Klasse Turtle
+
+		const myTurtle = new Turtle('turtleCanvas');
+
+		// Diese Funktion steht AUSSERHALB der Klasse
+		async function executeCommands() {
+			const text = document.getElementById('commandInput').value;
+			const lines = text.split('\n');
+
+			for (let line of lines) {
+				const tokens = line.trim().toLowerCase().split(/\s+/);
+				if (!tokens[0]) continue; // Überspringe leere Zeilen
+
+				const cmd = tokens[0];
+				const arg = tokens[1];
+
+				switch(cmd) {
+					case 'fd': await myTurtle.forward(parseFloat(arg)); break;
+					case 'rt': myTurtle.right(parseFloat(arg)); break;
+					case 'lt': myTurtle.left(parseFloat(arg)); break;
+					case 'pu': myTurtle.setPen(false); break;
+					case 'pd': myTurtle.setPen(true); break;
+					case 'color': myTurtle.setColor(arg); break;
+					case 'speed': myTurtle.speed = parseFloat(arg); break;
+				}
+			}
+		}
+
+		document.getElementById('runBtn').addEventListener('click', async () => {
+			myTurtle.reset(); 
+			await executeCommands(); // Warte, bis alle Befehle abgearbeitet sind
+		});
+
+		document.getElementById('clearBtn').addEventListener('click', () => {
+			myTurtle.reset();
+		});
+	</script>
+
+
+</body>
+</html>
+

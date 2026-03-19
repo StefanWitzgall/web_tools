@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Group Generator v011</title>
+    <style>
+		:root {
+			--accent: #00AA00;
+			--accent-glow: rgba(0, 170, 0, 0.3);
+		}
+
+		body {
+			font-family: 'Segoe UI', Tahoma, sans-serif;
+			transition: background-color 0.3s, color 0.3s;
+			background-color: #ffffff;
+			margin: 0;
+			height: 100vh;
+			display: flex;
+			flex-direction: column;
+			overflow: hidden;
+		}
+
+		body.dark-mode {
+			background-color: #000000;
+			color: #FFFF00;
+			--accent: #00FF00;
+			--accent-glow: rgba(0, 255, 0, 0.5);
+		}
+
+		/* Header Layout */
+		header {
+			padding: 10px 20px;
+			display: flex;
+			align-items: center;
+			gap: 25px;
+			border-bottom: 1px solid #888;
+			background: #eee;
+			height: 60px; /* Consistent height */
+			box-sizing: border-box;
+		}
+
+		body.dark-mode header {
+			background: #111;
+			border-color: var(--accent);
+		}
+
+		.controls-bar {
+			display: flex;
+			gap: 10px;
+			align-items: center;
+			margin-right: auto; /* Pushes Collab and Toggle to the right */
+		}
+
+		#collabInfo {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			font-size: 9px;
+			width: 110px;
+			line-height: 1.1;
+			color: #000;
+			text-align: center;
+			text-transform: uppercase;
+		}
+
+		body.dark-mode #collabInfo { color: #fff; }
+
+		/* Sidebar & Main Layout */
+		.main-layout {
+			display: flex;
+			flex: 1;
+			overflow: hidden;
+		}
+
+		.sidebar {
+			width: 350px;
+			display: flex;
+			flex-direction: column;
+			padding: 15px;
+			border-right: 1px solid #888;
+			background: #f9f9f9;
+		}
+
+		body.dark-mode .sidebar { background: #0a0a0a; border-color: var(--accent); }
+
+		textarea {
+			flex: 1;
+			font-family: 'Consolas', 'Courier New', monospace;
+			font-size: 16px;
+			border: 1px solid #ccc;
+			padding: 12px;
+			background: #fff;
+			color: #000;
+			resize: none;
+			outline: none;
+		}
+
+		body.dark-mode textarea { background: #151515; color: #FFFFFF; border-color: #333; }
+
+		/* Inputs & Buttons */
+		select, input[type="number"], button {
+			height: 38px; /* Standardize height for horizontal alignment */
+			box-sizing: border-box;
+		}
+
+		select, input[type="number"] {
+			padding: 8px;
+			border-radius: 4px;
+			border: 1px solid var(--accent);
+			background-color: #fff;
+			color: #000;
+			font-family: 'Consolas', monospace;
+			font-weight: bold;
+			outline: none;
+		}
+
+		body.dark-mode select,
+		body.dark-mode input[type="number"] {
+			background-color: #000;
+			color: var(--accent);
+			color-scheme: dark;
+		}
+
+		select {
+			appearance: none;
+			padding-right: 30px;
+			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org' width='12' height='12' fill='%2300AA00' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+			background-repeat: no-repeat;
+			background-position: calc(100% - 10px) center;
+		}
+
+		body.dark-mode select {
+			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org' width='12' height='12' fill='%2300FF00' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+		}
+
+		input[type="number"] {
+			width: 90px;
+			text-align: right;
+			padding-right: 25px; /* Important for spin-arrows */
+			text-align: left; padding-right: 8px; /* override previous */
+		}
+
+		button {
+			padding: 0 16px;
+			cursor: pointer;
+			border-radius: 4px;
+			border: 1px solid var(--accent);
+			background: #000;
+			color: #fff;
+			font-weight: bold;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		button:hover { box-shadow: 0 0 8px var(--accent-glow); }
+
+		/* Results Grid */
+		.results-scroll {
+			flex: 1;
+			padding: 20px;
+			overflow-y: auto;
+			display: flex;
+			flex-wrap: wrap;
+			gap: 15px;
+			align-content: flex-start;
+		}
+
+		.group {
+			width: 210px;
+			padding: 15px;
+			border: 1px solid #ddd;
+			border-radius: 4px;
+			background: #f9f9f9;
+		}
+
+		body.dark-mode .group { background: #111; border-color: var(--accent); color: #fff; }
+
+		h3 {
+			margin: 0 0 10px 0;
+			color: var(--accent);
+			font-size: 12px;
+			text-transform: uppercase;
+			border-bottom: 0px solid var(--accent-glow);
+		}
+
+		@media print {
+			/* Hide everything except the results */
+			header, .sidebar, #darkToggle { display: none !important; }
+
+			/* Make the results take up the whole page */
+			body, .main-layout, .results-panel, .results-scroll {
+				background: white !important;
+				color: black !important;
+				overflow: visible !important;
+				display: block !important;
+			}
+
+			.group {
+				border: 1px solid #000 !important;
+				break-inside: avoid; /* Don't split a group across two pages */
+				margin-bottom: 20px;
+				width: 40% !important;
+			}
+		}
+    </style>
+</head>
+<body class="dark-mode">
+
+	<header>
+		<div style="font-weight: bold; color: var(--accent);">GROUP GENERATOR</div>
+
+		<div class="controls-bar">
+			<select id="mode" style="min-width:180px;">
+				<option value="size">Target Group Size</option>
+				<option value="count">Number of Groups</option>
+			</select>
+			<input type="number" id="targetValue" value="3" min="1">
+			<button onclick="generateGroups()">GENERATE</button>
+			<button onclick="clearResults()" style="border-color: #FF0;">CLEAR</button>
+		</div>
+
+		<!-- Your Plotter Signature Block -->
+		<div id="collabInfo">
+			<span>v012</span>
+			<span style="font-weight: 500; margin-top: 2px;">WIT 10.03.2026, 18:34</span>
+		</div>
+
+		<button id="darkToggle" onclick="toggleTheme()">🌙</button>
+	</header>
+
+
+    <div class="main-layout">
+        <!-- Sidebar (Left): Input List -->
+		<div class="sidebar">
+			<div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+				<label style="font-size: 12px; font-weight: bold; opacity: 0.8;">FULL NAME LIST</label>
+				<span id="nameCount" style="font-size: 11px; font-weight: bold; color: var(--accent);">0 NAMES</span>
+			</div>
+			<!-- Added oninput event to update count live -->
+			<textarea id="nameList" oninput="updateCount()" placeholder="Enter names (one per line)..."></textarea>
+		</div>
+
+        <!-- Results Panel (Right): Controls + Output -->
+        <div class="results-panel">
+            <div class="results-scroll" id="output">
+                <!-- Groups will appear here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+		function updateCount() {
+			const input = document.getElementById('nameList').value;
+			// Split by line, trim whitespace, filter out empty strings
+			const count = input.split('\n')
+							   .map(n => n.trim())
+							   .filter(n => n !== "").length;
+
+			const display = document.getElementById('nameCount');
+			display.innerText = `${count} NAME${count !== 1 ? 'S' : ''}`;
+		}
+
+		// Call once on load to catch any pre-filled or refreshed content
+		window.addEventListener('DOMContentLoaded', updateCount);
+
+
+		function toggleTheme() {
+			const isDark = document.body.classList.toggle('dark-mode');
+
+			// Save state to localStorage
+			localStorage.setItem('darkMode', isDark);
+
+			// Update button text (ensure your button has id="darkToggle")
+			const btn = document.getElementById('darkToggle');
+			if (btn) {
+				btn.innerText = isDark ? '☀️' : '🌙';
+			}
+		}
+
+		// Add this to run when the page loads
+		window.onload = function() {
+			const savedDark = localStorage.getItem('darkMode') === 'true';
+			if (savedDark) {
+				document.body.classList.add('dark-mode');
+				document.getElementById('darkToggle').innerText = '☀️';
+			} else {
+				document.body.classList.remove('dark-mode');
+				document.getElementById('darkToggle').innerText = '🌙';
+			}
+		};
+
+
+        function clearResults() { document.getElementById('output').innerHTML = ""; }
+
+		function generateGroups() {
+			const input = document.getElementById('nameList').value;
+			const mode = document.getElementById('mode').value;
+			const val = parseInt(document.getElementById('targetValue').value);
+			const output = document.getElementById('output');
+
+			let names = input.split('\n').map(n => n.trim()).filter(n => n !== "");
+			if (names.length === 0 || val < 1) return;
+
+			// Fisher-Yates Shuffle
+			for (let i = names.length - 1; i > 0; i--) {
+				const j = Math.floor(Math.random() * (i + 1));
+				[names[i], names[j]] = [names[j], names[i]];
+			}
+
+			let finalGroups = [];
+
+			if (mode === 'size') {
+				// ALGORITHM: GROUP SIZE
+				for (let i = 0; i < names.length; i += val) {
+					finalGroups.push(names.slice(i, i + val));
+				}
+				// Anti-Loner: If last group is just 1 person, add them to Group 1
+				if (finalGroups.length > 1 && finalGroups[finalGroups.length - 1].length === 1 && val > 1) {
+					const loner = finalGroups.pop();
+					finalGroups[0].push(loner[0]);
+				}
+			} else {
+				// ALGORITHM: NUMBER OF GROUPS
+				// Initialize empty groups
+				for (let i = 0; i < val; i++) finalGroups.push([]);
+				// Distribute names one-by-one (dealing cards style)
+				names.forEach((name, index) => {
+					finalGroups[index % val].push(name);
+				});
+				// Filter out empty groups if names < target groups
+				finalGroups = finalGroups.filter(g => g.length > 0);
+			}
+
+			// Render
+			output.innerHTML = "";
+			finalGroups.forEach((chunk, index) => {
+				const groupDiv = document.createElement('div');
+				groupDiv.className = 'group';
+				groupDiv.innerHTML = `<h3>Group ${index + 1}</h3>${chunk.join('<br>')}`;
+				output.appendChild(groupDiv);
+			});
+		}
+    </script>
+</body>
+</html>
