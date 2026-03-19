@@ -1,54 +1,63 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>s4nw6l</title>
-    <link rel="stylesheet" href="style.css">
-    
-    <style>
-        /* This sets the dark theme */
-        body {
-            background-color: #121212; /* Deep black/grey */
-            color: #ffffff;            /* Pure white text */
-            font-family: sans-serif;   /* Cleaner look */
-            margin: 0;
-            padding: 2rem;
-            line-height: 1.6;
-        }
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>s4nw6l</title>
+	<!-- <link rel="stylesheet" href="style.css"> -->
+	<style>
+		/* 1. Default (Light Mode) */
+		body {
+			background-color: #ffffff;
+			color: #000000;
+			font-family: sans-serif;
+			margin: 0;
+			padding: 2rem;
+			line-height: 1.6;
+			transition: background-color 0.3s, color 0.3s; /* Smooth transition */
+		}
 
-        /* Optional: Makes links easier to read on dark background */
-        a {
-            color: #bb86fc; 
-        }
-    </style>
+		/* 2. Night Mode (when the class is active) */
+		body.dark-mode {
+			background-color: #121212;
+			color: #ffffff;
+		}
+
+		/* Links for Dark Mode */
+		body.dark-mode a {
+			color: #bb86fc;
+		}
+	</style>
 </head>
 <body class="dark-mode">
-    <h1>Hello World!</h1>
-    <p>Some html and JavaScript tools.</p>
-    
-    <a href="JavaScript_function_plotter/function_plotter_wit_v084.html">Function Plotter v084</a> 
-    
+	<h1>HTML and JavaScript TOOLS</h1>
+	<p>A collection of adhoc pages with JavaScript.</p>
 
-    <p>18.03.2026, 18:11 CET</p>
-    
-    
-    <button id="theme-toggle" onclick="toggleTheme()">☀ / 🌙</button>
-    <script src="script.js"></script>
-    <script>
-        function toggleTheme() {
-            // This flips the 'dark-mode' class on or off
-            document.body.classList.toggle('dark-mode');
-            
-            // Optional: Update button text/icon based on mode
-            const btn = document.getElementById('theme-toggle');
-            if (document.body.classList.contains('dark-mode')) {
-                btn.innerText = "🌙 Night";
-            } else {
-                btn.innerText = "☀ Day";
-            }
-        }
-    </script>
+	<a href="JavaScript_function_plotter/function_plotter_wit_v084.html">Function Plotter</a><br>
+	<a href="talking_clock/horloge_parlante_wit.html">Talking Clock</a><br>
+	<a href="JavaScript_random_group_generator/random_group_generator_wit_v011.html">Random Group Generator</a><br>
+	<a href="JavaScript_seat_chart_maker/JavaScript_seat_chart_maker_wit_v010.html">Seat Chart Maker</a><br>
+	<a href="TurtleGraphics_with_JavaScript/TurtleGraphics_with_JavaScript_wit_v011.html">Turtle Graphics with JavaScript</a><br>
+
+	<p>19.03.2026, 01:52 CET</p>
+
+
+	<button id="theme-toggle" onclick="toggleTheme()">☀ / 🌙</button>
+	<!-- <script src="script.js"></script> -->
+	<script>
+		function toggleTheme() {
+			// This flips the 'dark-mode' class on or off
+			document.body.classList.toggle('dark-mode');
+
+			// Optional: Update button text/icon based on mode
+			const btn = document.getElementById('theme-toggle');
+			if (document.body.classList.contains('dark-mode')) {
+				btn.innerText = "🌙 Night";
+			} else {
+				btn.innerText = "☀ Day";
+			}
+		}
+	</script>
 
 </body>
 </html>
