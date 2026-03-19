@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>s4nw6l</title>
 	<!-- <link rel="stylesheet" href="style.css"> -->
 	<style>
-		/* 1. Default (Light Mode) */
 		body {
 			background-color: #ffffff;
 			color: #000000;
@@ -16,8 +15,6 @@
 			line-height: 1.6;
 			transition: background-color 0.3s, color 0.3s; /* Smooth transition */
 		}
-
-		/* 2. Night Mode (when the class is active) */
 		body.dark-mode {
 			background-color: #121212;
 			color: #ffffff;
@@ -27,11 +24,38 @@
 		body.dark-mode a {
 			color: #bb86fc;
 		}
+
+		/* Style for the button in Light Mode */
+		#theme-toggle {
+			padding: 2px 5px;
+			cursor: pointer;
+			border: 2px solid #000;
+			background-color: #fff;
+			color: #000;
+			font-weight: bold;
+			border-radius: 8px;
+			transition: all 0.3s ease;
+		}
+
+		/* Style for the button in Dark Mode */
+		body.dark-mode #theme-toggle {
+			background-color: #333;
+			color: #fff;
+			border-color: #bb86fc; /* Matching your link color */
+		}
+
+		/* Optional: Add a hover effect */
+		#theme-toggle:hover {
+			opacity: 0.8;
+			transform: scale(1.05);
+		}
+
+
 	</style>
 </head>
 <body class="dark-mode">
 	<h1>HTML and JavaScript TOOLS</h1>
-	<p>A collection of adhoc pages with JavaScript.</p>
+	<p>A collection of html pages with JavaScript.</p>
 
 	<a href="JavaScript_function_plotter/function_plotter_wit_v084.html">Function Plotter</a><br>
 	<a href="talking_clock/horloge_parlante_wit.html">Talking Clock</a><br>
@@ -39,10 +63,20 @@
 	<a href="JavaScript_seat_chart_maker/JavaScript_seat_chart_maker_wit_v010.html">Seat Chart Maker</a><br>
 	<a href="TurtleGraphics_with_JavaScript/TurtleGraphics_with_JavaScript_wit_v011.html">Turtle Graphics with JavaScript</a><br>
 
-	<p>19.03.2026, 01:52 CET</p>
+	<p>All software is provided with no guarantee.
+	All programs are work in progress. Especially for the plotter project help is welcome.</p>
+	<p>It needs useful documentation. The JS code, the css, everything needs revision. There will be bugs, flaws and gremlins.
+	I want to make all keys, as color, thickness, for which it makes sense, to be time dependent.
+	Perhaps (sure .-) there is an elegant way to do this.
+	The colors and linewidths of the coordinate system should be controlled by keys so the user can change them.
+	The font, fontsize, colour etc. for the labels and a possible description should be accessible by keys.
+	The save/load procedure should remember file names.
+	We could offer export as PostScript and svg.</p>
 
 
+	<p>Stefan Witzgall, Hof, Germany, 19.03.2026, 02:42 CET</p>
 	<button id="theme-toggle" onclick="toggleTheme()">☀ / 🌙</button>
+
 	<!-- <script src="script.js"></script> -->
 	<script>
 		function toggleTheme() {
@@ -50,14 +84,15 @@
 			document.body.classList.toggle('dark-mode');
 
 			// Optional: Update button text/icon based on mode
+			/*
 			const btn = document.getElementById('theme-toggle');
 			if (document.body.classList.contains('dark-mode')) {
 				btn.innerText = "🌙 Night";
 			} else {
 				btn.innerText = "☀ Day";
 			}
+			*/
 		}
 	</script>
-
 </body>
 </html>
