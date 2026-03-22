@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Teaching Clock</title>
+	<style>
+		:root {
+			--accent: #007bff;
+		}
+		body.dark-mode {
+			--accent: #00d4ff;
+		}
+
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			text-align: center;
+			padding: 5px 20px;
+			background-color: #FFFFFF;
+			color: #00AA00;
+			margin: 0;
+		}
+
+		* { box-sizing: border-box; }
+
+		/* Der Container, der alles zusammenhält */
+		.main-container {
+			width: 95%;
+			max-width: 800px;
+			margin: 5px auto;
+			padding: 10px;
+		}
+
+		.nav-link-style {
+			text-decoration: none;
+			color: #0000FF;
+			font-weight: bold;
+			border: 1px solid #0000FF;
+			padding: 5px 10px;
+			border-radius: 5px;
+			background: white;
+			font-size: 14px;
+			width: 140px; /* Einheitliche Breite für beide Buttons */
+			text-align: center;
+			transition: all 0.2s;
+		}
+
+		.nav-link-style:hover {
+			background: #f0f0ff;
+			box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+		}
+
+		#mainTimeInput {
+			width: 450px;
+			width: 100%;
+			box-sizing: border-box; /* Zwingt das Feld, inklusive Padding exakt 450px breit zu sein */
+			font-size: 30px;
+			font-weight: bold;
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			color: #000000;
+
+			/* Zentrierung angleichen */
+			display: block;         /* von inline-block auf block ändern */
+			margin: 20px auto;      /* auto sorgt für die horizontale Zentrierung */
+
+			background: #FFFFFF;
+			padding: 10px 20px;
+			border-radius: 15px;
+			border: 1px solid #000000;
+			text-align: center;
+			box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+			outline: none;
+		}
+
+		#analogClock {
+			width: 100%;           /* Passt sich dem Container an */
+			max-width: 500px;      /* Eine gute Maximalgröße für die Uhr */
+			height: auto;          /* Behält das Seitenverhältnis bei */
+			margin: 0px auto;
+			border-radius: 50%;
+			display: block;
+			/* background-color: white; */
+			/* border: 10px solid #000000; */
+			/* box-shadow: 0 15px 30px rgba(0,0,0,0.1); */
+		}
+
+		.time-display {
+			font-weight: bold;
+			color: #000000;
+			background: white;
+			border: 4px solid #000000;
+			border-radius: 20px;
+			display: inline-block;
+			padding: 10px 40px;
+			font-family: 'Segoe UI', sans-serif;
+			/* Für das Input-Feld in der Teaching Clock wichtig: */
+			text-align: center;
+			outline: none;
+		}
+
+		.button-group {
+			display: flex;
+			justify-content: center;
+			gap: 15px;
+			align-items: flex-start;
+		}
+
+		.button-container {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 8px;
+		}
+
+		#darkToggle {
+			/* Positionierung */
+			position: fixed;
+			bottom: 20px;
+			right: 20px;
+			z-index: 1000;
+		}
+
+		#darkToggle:hover {
+			filter: brightness(1.2);
+			border-color: #fff;
+		}
+
+		button {
+			/* width: 65%; */
+			padding: 6px 14px;
+			cursor: pointer;
+			border-radius: 4px;
+			border: 1px solid var(--accent);
+			background: #000;
+			color: #fff;
+			font-weight: bold;
+			transition: transform 0.3s; /* Kleiner Klick-Effekt */
+		}
+
+		button:active {
+			transform: scale(0.95);
+		}
+
+		.btn-blue { background-color: #3498db; }
+		.btn-green { background-color: #27ae60; }
+		.btn-orange { background-color: #f39c12; }
+		.btn-red { background-color: #e74c3c; }
+		.btn-star {
+			background: #000000;
+			min-width: 50px !important;
+			width: 50px !important;
+			height: 36px !important;
+			padding: 5px !important;
+			font-size: 20px;
+		}
+
+		button:hover { opacity: 0.9; transform: translateY(-2px); }
+
+		/* Gemeinsame Basis für beide Kästen */
+		.control-panel,
+		.settings-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Handy: untereinander, PC: nebeneinander */
+			gap: 20px;
+			width: 450px;
+			width: 100%;
+			max-width: 800px;
+			margin: 20px auto;
+			background: white;
+			padding: 20px;
+			border-radius: 12px;
+			border: 1px solid #000;
+			text-align: left;
+		}
+
+		#collab-info {
+			width: 100%;
+			max-width: 800px;
+			margin: 0px auto 20px auto;
+			text-align: left;
+			font-size: 13px;
+			color: #000;
+			line-height: 1.6;
+		}
+
+		.voice-controls {
+			display: flex;
+			gap: 10px;
+			align-items: center;
+			margin-top: 5px;
+		}
+
+		.mode-option {
+			font-size: 13px;
+			color: #000000;
+			display: flex;
+			align-items: center;
+			gap: 5px;
+		}
+
+		select, label { display: block; width: 100%; }
+		label { margin-bottom: 5px; font-weight: bold; font-size: 14px; }
+		select { padding: 10px; border-radius: 5px; border: 1px solid #f00; background: white; }
+
+		/* ---------------------------------------------------------- */
+		/* -------------------- Dark Mode Styles -------------------- */
+		/* ---------------------------------------------------------- */
+
+		/* Seite */
+		body.dark-mode {
+			background-color: #000000 !important;
+			color: #00FF00 !important;
+		}
+
+		/* Spezifische Anpassung für die Bedienfelder */
+		body.dark-mode .control-panel,
+		body.dark-mode .mode-option,
+		body.dark-mode .settings-grid,
+		body.dark-mode .time-display {
+			background-color: #000000 !important;
+			color: #ffffff !important;
+			border-color: #444 !important;
+		}
+
+		/* Dark Mode Anpassung für die Links */
+		body.dark-mode .nav-link-style {
+			color: #5dade2;
+			border-color: #5dade2;
+			background: #000;
+		}
+
+		body.dark-mode .status-text { color: #bbb; }
+		body.dark-mode #clock { color: #44FF00 !important; }
+		body.dark-mode .status-red { color: #ff6b6b; }
+		body.dark-mode .status-green { color: #2ecc71; }
+		body.dark-mode #collab-info { color: #888 !important; }
+		body.dark-mode .nav-link { color: #5dade2; border-color: #5dade2; }
+		body.dark-mode select { background: #333; color: white; border-color: #666; }
+	</style>
+</head>
+
+<body>
+	<noscript>
+		<div style="background: #000000; color: white; padding: 20px; text-align: center; font-weight: bold;">
+			⚠️ Achtung: Diese Uhr benötigt JavaScript. Bitte aktiviere es in deinen Browser-Einstellungen.
+		</div>
+	</noscript>
+
+	<div style="position: absolute; top: 15px; right: 20px; display: flex; flex-direction: column; gap: 10px; align-items: flex-end;">
+		<a href="horloge_parlante_wit.html" class="nav-link-style">Analoge Uhr</a>
+		<a href="horloge_parlante_wit_digital.html" class="nav-link-style">Digitale Uhr</a>
+	</div>
+
+	<button id="darkToggle" onclick="handleThemeChange()" title="Nachtmodus an/aus">🌙</button>
+
+	<div class="main-container">
+
+		<canvas id="analogClock" width="320" height="320"></canvas>
+
+		<input type="text" id="mainTimeInput" class="time-display" value="10:10" maxlength="8" onkeypress="if(event.key==='Enter') updateFromInput()">
+
+		<div class="control-panel">
+			<div class="button-group">
+				<div class="button-container">
+					<button class="btn-orange" onclick="setRandomTimeOnly()">Zufallszeit</button>
+					<div class="mode-option">
+						<input type="checkbox" id="secToggle">
+						<label style="display:inline; font-weight: normal;" for="secToggle">mit Sekunden</label>
+					</div>
+				</div>
+
+				<div class="button-container">
+					<button class="btn-blue" onclick="updateFromInput()">Anzeigen & Vorlesen</button>
+				</div>
+			</div>
+		</div>
+
+		<div class="settings-grid">
+			<label for="voiceSelect">Wähle eine Stimme:</label>
+			<div class="voice-controls">
+				<select id="voiceSelect" onchange="selectVoice()"></select>
+				<button class="btn-star" onclick="toggleFavorite()" title="Stimme als Favorit speichern/löschen">⭐</button>
+			</div>
+		</div>
+
+		<div id="collab-info">
+			<strong>Stefan Witzgall</strong> &mdash; v092 22.03.2026, 07:43&nbsp;Uhr&nbsp;MEZ<br><br>
+			<strong>Hinweise</strong><br>
+			• <b>Eingabe:</b> <code>HH:MM</code> oder <code>HH:MM:SS</code> auch einzifferig.<br>
+			• <b>Vorlesen:</b> <code>Enter</code> oder Klick auf <code>Anzeigen & Vorlesen</code>.<br>
+			• <b>Audio:</b> Sprachausgabe startet nach dem ersten Klick.<br>
+			• <b>Stimmen:</b> System- oder Browserstimmen via Web Speech API.<br>
+			• <b>Favoriten:</b> ⭐ zum Speichern/Löschen der Stimme.<br>
+			• <b>Lizenz:</b> Software bereitgestellt unter der MIT-Lizenz.
+				Keine Haftung für die Funktion dieser Software.<br>
+		</div>
+
+	</div>
+
+	<script src="audio-engine.js"></script>
+	<script src="ui-utils.js"></script>
+	<script src="speech-engine.js"></script>
+	<script src="time-handling.js"></script>
+	<script src="analog-clock-drawing.js"></script>
+
+	<script>
+		const canvas = document.getElementById('analogClock');
+		const ctx = canvas.getContext('2d');
+
+		const timeInput = document.getElementById('mainTimeInput');
+
+		// Feature Check ohne Schleife für bessere Browser-Kompatibilität
+		if (!('speechSynthesis' in window) || !('fetch' in window)) {
+			console.warn("Browser unterstützt benötigte APIs nicht vollständig.");
+		}
+
+		function handleThemeChange() {
+			toggleDarkMode();
+			updateFromInput(false); // Führt das Update aus, aber OHNE Sprache
+		}
+
+		function setRandomTimeOnly() {
+			const withSec = document.getElementById('secToggle').checked;
+			const h = Math.floor(Math.random() * 24);
+			const m = Math.floor(Math.random() * 60);
+			let timeStr = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+			if (withSec) {
+				const s = Math.floor(Math.random() * 60);
+				timeStr += `:${s.toString().padStart(2,'0')}`;
+			}
+			timeInput.value = timeStr;
+			updateFromInput(false);
+		}
+
+
+		function updateFromInput(shouldSpeak = true) {
+			const val = timeInput.value.trim();
+			const parts = val.split(':');
+			if (parts.length < 2) return;
+
+			const h = parseInt(parts[0]) || 0;
+			const m = parseInt(parts[1]) || 0;
+			const s = parts[2] ? parseInt(parts[2]) : 0;
+			const hasSeconds = (parts.length === 3);
+
+			// Formatierung im Feld aktualisieren
+			let formatted = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+			if (hasSeconds) formatted += `:${s.toString().padStart(2,'0')}`;
+			timeInput.value = formatted;
+
+			// Weitergabe des "shouldSpeak" Flags
+			processDisplay(h, m, s, hasSeconds, shouldSpeak);
+		}
+
+		function processDisplay(h, m, s, hasSeconds, shouldSpeak = true) {
+			const dummyDate = new Date();
+			dummyDate.setHours(h, m, s);
+
+			// 1. Immer Zeichnen
+			drawClock(dummyDate, hasSeconds);
+
+			// 2. Nur Sprechen, wenn ausdrücklich erwünscht
+			if (shouldSpeak && selectedVoice) {
+				window.speechSynthesis.cancel();
+				// old: const text = getAnnouncementText(dummyDate, selectedVoice.lang);
+				// new:
+				const text = getAnnouncementText(dummyDate, {
+					mode: 'TEACHING',
+					lang: selectedVoice.lang,
+					hasSeconds: hasSeconds
+				});
+
+				const utt = new SpeechSynthesisUtterance(text);
+				utt.voice = selectedVoice;
+				window.speechSynthesis.speak(utt);
+			}
+		}
+
+
+
+		window.addEventListener('load', () => {
+			applyInitialTheme(); // Aus ui-utils.js
+			setupFocusBrakes();  // Aus ui-utils.js
+
+			// Stimmen initialisieren (aus speech-engine.js)
+			loadVoices();
+			if (window.speechSynthesis.onvoiceschanged !== undefined) {
+				window.speechSynthesis.onvoiceschanged = loadVoices;
+			}
+
+			// Startzeit setzen (10:10)
+			const startH = 10, startM = 10;
+			timeInput.value = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')}`;
+
+			const startTime = new Date();
+			startTime.setHours(startH, startM, 0);
+			drawClock(startTime, false);
+		});
+	</script>
+</body>
+</html>

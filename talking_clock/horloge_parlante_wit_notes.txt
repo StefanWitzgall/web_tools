@@ -1,0 +1,86 @@
+Ein wichtiger iPad-Hinweis: Der Stummschalter
+
+Das klingt trivial, ist aber beim iPad oft die Ursache für "Stimme ja, Piep nein":
+
+Stimmen (Speech) werden über den "Medien-Kanal" ausgegeben (wie Videos).
+
+Web Audio (Piep) wird oft als "System-Sound" eingestuft.
+
+Wenn der physische Seitenschalter am iPad auf "Stumm" steht oder das Glocken-Symbol im Control Center rot ist, blockiert iOS oft den AudioContext (Piep), lässt aber die Sprachausgabe (Siri) durch.
+
+Test-Tipp für die Kollegen: Prüfen, ob das iPad wirklich "laut" gestellt ist (Glocken-Symbol im Menü darf nicht durchgestrichen sein).
+
+
+
+
+Ich habe hier eine Liste von Konstanten und Funktionen extrahiert,
+die sich die "Analog Clock" und die "Digital Clock" teilen könnten.
+Wir sollten eine nach der anderen als separate .js-Datei auslagern.
+Oder sollten wir alle in eine .js-Datei integrieren?
+Aber wir haben noch die "Teaching Clock", die auch eine Sprachausgabe
+und die Anzeige als analoge Uhr hat. Das Zeichnen der Uhr hat sie
+also mit der "Analog Clock" gemeinsam. Wie sollten wir vorgehen?
+Lass uns zuerst auf ein Vorgehen verständigen.
+
+Hier die Liste der Konstanten und Funktionen, die sich jedenfalls die
+Analog Clock und die Digital Clock teilen könnten:
+
+	<script>
+		let useNetworkTime = false;
+		let timeOffset = 0; // Millisekunden-Abweichung zur Systemzeit
+		let currentTimeZone = "SYSTEM"; // Aktuell gewählte Zone
+		let localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone; // Erkennt z.B. "Europe/Berlin"
+
+		let displayZoneName = "Systemzeit";
+		let syncInterval = null;
+
+		let allVoices = [];
+		let selectedVoice = null;
+		let isSpeakingEnabled = false;
+		let isSyncActive = false;
+		let audioCtx = null;
+		let favoriteVoices = JSON.parse(localStorage.getItem('clockFavorites') || '[]');
+
+		const canvas = document.getElementById('analogClock');
+		const ctx = canvas.getContext('2d');
+
+		const BEEP_FREQ = 1000;
+		const BEEP_LENGTH = 0.5;
+		const LEAD_TIME = 8;
+
+		function loadVoices() {
+
+		function selectVoice() {
+
+		function toggleFavorite() {
+
+		function playBeep() {
+
+		function handleAudioToggle() {
+
+		async function toggleSync(onlyUpdate = false) {
+
+		function calculateOfflineOffset() {
+
+		async function handleZoneChange() {
+
+		function getAnnouncementText(dateOrH, langOrM, s, hasSeconds, langCode) {
+	
+		// *************************************************************
+		// Kernfunktion, in denen sich die "Analog Clock" und die "Digital Clock" voneinander unterscheiden.
+		function updateClock() {
+		// *************************************************************
+
+		function toggleDarkMode() {
+
+		window.addEventListener('load', () => {
+
+		function setupFocusBrakes() {
+
+		// Aufruf am Ende deines Skripts
+		setupFocusBrakes();
+
+	</script>
+</body>
+</html>
+
