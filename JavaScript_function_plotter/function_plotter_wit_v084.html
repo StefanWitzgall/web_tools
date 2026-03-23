@@ -1,0 +1,2794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Function Plotter wit v084</title>
+
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
+
+	<style>
+		:root {
+			--accent: #00AA00;
+			--accent-glow: rgba(0, 170, 0, 0.3);
+		}
+
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			transition: background-color 0.3s, color 0.3s;
+			background-color: #ffffff;
+			margin: 0;
+			overflow: hidden;
+			height: 100dvh;
+			width: 100vw;
+		}
+
+		body.dark-mode {
+			background-color: #000000;
+			color: #FFFF00; /* Default text color for Help in dark mode */
+			--accent: #00FF00;
+			--accent-glow: rgba(0, 255, 0, 0.5);
+		}
+
+		/* Main Layout */
+		.main-layout {
+			display: flex;
+			height: 100vh;
+			height: 100svh;
+			width: 100vw;
+		}
+
+
+		/* Sidebar */
+		.sidebar {
+			width: 420px;
+			display: flex;
+			flex-direction: column;
+			caret-color: #FF0000;
+			border-right: 1px solid #888;
+			background: #f9f9f9;
+		}
+		body.dark-mode .sidebar { background: #0a0a0a; caret-color: #00ff00; border-color: var(--accent); }
+
+		/* Tab System */
+		.tab-system { display: flex; background: #ddd; border-bottom: 1px solid #888; }
+		body.dark-mode .tab-system { background: #222; }
+
+		.tab-btn {
+			flex: 1; padding: 14px; border: none; background: none; cursor: pointer;
+			font-weight: bold; color: #666; transition: 0.2s; font-size: 11px;
+			text-transform: uppercase; letter-spacing: 1px;
+		}
+		.tab-btn.active {
+			background: #f9f9f9;
+			color: var(--accent);
+			border-bottom: 3px solid var(--accent);
+		}
+		body.dark-mode .tab-btn.active { background: #0a0a0a; }
+
+		.tab-content {
+			flex: 1;
+			display: none;
+			flex-direction: column;
+			padding: 15px;
+			overflow-y: auto;
+			background: inherit;
+		}
+		.tab-content.active { display: flex; }
+
+		/* Unified Script Editor & Help Viewer */
+		.script-area,
+		.doc-view {
+			flex: 1;
+			font-family: 'Consolas', 'Courier New', monospace;
+			font-size: 16px;
+			line-height: 1.6;
+			border-radius: 4px;
+			border: 1px solid #ccc;
+			padding: 12px;
+			outline: none;
+			resize: none;
+			background: #fff;
+			color: #000;
+		}
+
+		body.dark-mode .script-area {
+			background: #151515;
+			color: #FFFFFF;
+			border-color: #333;
+		}
+
+		body.dark-mode .doc-view {
+			background: #151515;
+			color: #FFFF00;
+			border-color: #333;
+		}
+
+		/* Technical Badges in Help */
+		#keyword-list code, .doc-view code {
+			background: rgba(255, 255, 0, 0.1);
+			color: inherit;
+			padding: 2px 5px;
+			border-radius: 4px;
+			border: 1px solid rgba(255, 255, 0, 0.3);
+		}
+
+
+		/* Day Mode: Subtle Dark Grey */
+		.doc-view small { color: #0000ff; }
+
+		/* Night Mode: Subtle Dimmer Yellow */
+		body.dark-mode .doc-view small { color: #AAAA00; }
+
+
+		.canvas-panel {
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+			overflow: hidden;
+			background: inherit; /* Ensures background matches dark/light mode */
+		}
+
+
+
+		/* Fix the Canvas Container so it doesn't leave a gap */
+		.canvas-container {
+			/* Remove 'max-height: 80vh' — it’s likely causing the black gap */
+			flex: 1 1 auto;
+			width: 100%;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			position: relative;
+			background: #fafafa;
+			min-height: 0; /* Critical for flex-children to shrink/grow correctly */
+		}
+		body.dark-mode .canvas-container { background: #050505; }
+
+
+		.resizer {
+			width: 10px;           /* Large area for easy grabbing */
+			cursor: col-resize;
+			background: transparent; /* Keep the actual div invisible */
+			position: relative;
+			flex-shrink: 0;
+			display: flex;
+			justify-content: center;
+		}
+
+		/* This creates the actual visible "thin line" inside the div */
+		.resizer::after {
+			content: "";
+			width: 2px;
+			height: 100%;
+			background: #ccc;      /* The visible line color */
+			transition: background 0.2s;
+		}
+
+		.resizer:hover::after {
+			background: var(--accent); /* Highlights only the thin line */
+		}
+
+		body.dark-mode .resizer::after {
+			background: #444;
+		}
+
+
+
+		.status-bar {
+			/* color: var(--accent); */
+			flex: 0 0 auto;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 4 10px;
+			min-height: 55px;
+			background: #eee;
+			border-top: 1px solid #888;
+			color: var(--accent);
+			padding-bottom: env(safe-area-inset-bottom, 0px);
+			flex-wrap: wrap;
+			flex-shrink: 0;
+			overflow: visible;   /* Ensure nothing is clipped */
+		}
+		body.dark-mode .status-bar { background: #000; border-color: var(--accent); }
+
+
+		#collabInfo {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			font-size: 9px;
+			width: 100px;
+			line-height: 1.1;
+			color: #000;
+			text-align: center;
+			text-transform: uppercase;
+			/* order: 2; */
+		}
+		body.dark-mode #collabInfo { color: #fff; }
+
+
+		#tContainer {
+			width: 128px;
+			font-family: 'Courier New', monospace;
+			text-align: right;
+			font-size: 1.2rem;
+			font-weight: bold;
+			white-space: nowrap;
+		}
+
+
+		.nav-left-group, .nav-right-group, .nav-center-group {
+			display: flex;
+			align-items: center;
+			gap: 15px;
+		}
+
+
+		#tInput {
+			background: transparent;
+			/* background: #000; */
+			border: none;
+			color: inherit;
+			font-family: inherit;
+			font-size: inherit;
+			width: 80px;
+			outline: none;
+		}
+
+		button {
+			padding: 6px 14px;
+			cursor: pointer;
+			border-radius: 4px;
+			border: 1px solid var(--accent);
+			background: #000; color: #fff;
+			font-weight: bold;
+		}
+
+
+
+
+.falstad-menu {
+    position: relative;
+    display: inline-block;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    font-size: 14px; /* Smaller, technical font size */
+    min-width: 160px;
+}
+
+.menu-trigger {
+    background: #000;
+    color: white;
+    /* padding: 3px 10px; */
+    padding: 5px 15px; /* More horizontal padding */
+	padding: 6px 14px;
+    cursor: pointer;
+    border: 1px solid #FFFF00;
+    border-radius: 4px;
+    text-align: center; /* Centers the label */
+}
+
+/* 1. The Container - Allow things to stick out! */
+.menu-content {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    min-width: 180px;
+    z-index: 10000;
+    /* Remove overflow from here! */
+}
+
+/* Positioning */
+.menu-content { bottom: 100%; left: 0; }
+
+/* 2. The Submenu - The pop-out */
+.submenu {
+    display: none;
+    position: absolute;
+    left: 100%;
+    bottom: 0;
+    background: #fff;
+    border: 1px solid #ccc;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    margin-left: -2px; /* Pull it slightly back to overlap the parent */
+    padding-left: 2px; /* Add that space back as padding so it stays 'active' */
+
+    min-width: 200px;
+
+    /* ADD SCROLLING HERE INSTEAD */
+    max-height: 70vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+
+/* --- 1. BASE LIGHT MODE (Default) --- */
+.menu-content, .submenu {
+    background: #ffffff;
+    color: #333333 !important; /* Force dark text for visibility */
+    border: 1px solid #ccc;
+}
+
+
+
+/* --- Items & Hover --- */
+/* Update this section in your CSS */
+.menu-content li {
+    padding: 6px 15px;      /* Slightly more vertical breathing room since lines are gone */
+    cursor: pointer;
+    white-space: nowrap;
+    border-bottom: none;    /* THIS REMOVES THE DIVIDER LINES */
+    transition: background 0.1s; /* Makes the hover feel smoother */
+}
+
+/* Ensure sub-items also have no borders */
+.submenu li {
+    border-bottom: none !important;
+    color: #333333; /* Ensure every item starts as dark text */
+}
+
+
+/* Optional: Keep the dividers ONLY for major sections like "File" if you want */
+/* .has-submenu { border-bottom: 1px solid #444; } */
+/* --- The "Bridge" Fix --- */
+.has-submenu {
+    position: relative; /* Ensure this is the anchor */
+}
+
+/* Ensure there's no 'dead zone' between the items */
+.menu-content li {
+    position: relative;
+}
+
+
+/* --- 2. HOVER STATE (Both Modes) --- */
+/* When we hover, THEN we want white text on a blue background */
+.menu-content li:hover {
+    background: #007bff;
+    color: #ffffff !important;
+}
+
+/* --- 3. DARK MODE OVERRIDE --- */
+body.dark-mode .menu-content,
+body.dark-mode .submenu {
+    background: #1e1e1e;
+    color: #dddddd !important; /* Light grey text for dark mode */
+    border-color: #444;
+}
+
+body.dark-mode .menu-content li {
+    color: #dddddd;
+}
+
+/* Dark Mode Hover */
+body.dark-mode .menu-content li:hover {
+    background: #383838;
+    color: #ffffff !important;
+}
+
+/* 3. Show Logic - Must use 'flex' or 'block' */
+.falstad-menu:hover > .menu-content {
+    display: block;
+}
+
+.has-submenu:hover > .submenu {
+    display: block;
+}
+
+@media (pointer: coarse) {
+    /* Ensure text returns to dark after the touch is finished */
+    .menu-content li:not(:hover) {
+        color: #333333;
+    }
+}
+
+
+/* iPad/Touch Helper */
+@media (pointer: coarse) {
+    /* 1. When you tap the parent, keep the submenu visible */
+    .has-submenu:active > .submenu,
+    .has-submenu:focus > .submenu {
+        display: block;
+    }
+
+    /* 2. Give the user a visual "hit" state so they know they tapped it */
+    .menu-content li:active {
+        background-color: #007bff;
+        color: white;
+    }
+}
+
+.menu-content, .submenu {
+    -webkit-overflow-scrolling: touch; /* Essential for smooth iPad scrolling */
+}
+
+
+	</style>
+</head>
+<body>
+<div class="main-layout">
+	<div class="sidebar">
+		<div class="tab-system">
+			<button class="tab-btn active" onclick="openTab(0)">SETUP</button>
+			<button class="tab-btn" onclick="openTab(1)">FUNCTIONS</button>
+			<button class="tab-btn" onclick="openTab(2)">HELP</button>
+		</div>
+
+		<div id="tab0" class="tab-content active">
+			<textarea id="scriptArea0" class="script-area">
+\bpre
+% mapping: physical
+% mapping: non_distorting
+mapping: fill_canvas
+
+\def{pi}{Math.PI}
+\def{e}{Math.E}
+\def{sin}{Math.sin}
+\def{cos}{Math.cos}
+\def{abs}{Math.abs}
+\def{exp}{Math.exp}
+\def{sqrt}{Math.sqrt}
+
+animSpeed: [0 5]
+tRange: [1 2*pi]
+loopMode: sweep
+% sweep once normal cycle
+
+axisXmin: -9
+axisXmax: 9
+axisYmin: -9
+axisYmax: 9
+gridXstep: 1
+gridYstep: 1
+labelsXstep: 1
+labelsYstep: .5
+ordXpos: -1*t
+absYpos: 0
+xu: 50
+yu: 50
+titleX: Voltage / V
+titleY: Current / mA
+
+\epre
+			</textarea>
+		</div>
+		<div id="tab1" class="tab-content">
+			<textarea id="scriptArea1" class="script-area">
+\bfun
+name: r; term: 5; plot: no
+\efun
+
+\bfun name: halfcircle_up
+term: sqrt(Math.max(0, r*r - x^2))
+color: yellow; domain: [-5 5]; thickness: 20
+\efun
+
+\bfun name: halfcircle_down
+term: -1 * halfcircle_up
+domain: [-5 5]; thickness: 10
+color: #AA00AA
+\efun
+
+\bfun name: a % helper, draw later
+term: x^1 % try x^2 and x^3 ...
+plot: no
+\efun
+
+\bfun
+name: envelope
+term: exp(-abs(x)/4)
+thickness: 3
+color: #888888
+dash: [8 4]
+domain: [-20 7]
+\efun
+
+\bfun
+name: signal
+term: envelope(x) * sin(2*x + t)
+thickness: 3
+plot: yes
+color: #00AA00
+\efun
+
+\bfun
+name: echo
+term: -1*signal(x-.3) + 7
+thickness: 2
+color: #FF00FF
+\efun
+
+\bfun name: b
+term: 4*signal(a*a)+2
+color: white
+thickness: 2; plot: true
+\efun
+
+\bfun name: c; term: -1*b
+color: orange; thickness: 1.5
+dash: [6 2]; domain: [-3 8]
+\efun
+
+\bfun % now plot a
+name: a_with_a_fancy-name;
+term: a; color: red; thickness: 10
+domain: [-1 1.5] \efun
+			</textarea>
+		</div>
+		<div id="tab2" class="tab-content doc-view">
+			<h4>Usage Manual</h4>
+			<p><strong>SETUP</strong> Define constants and animation behavior. Definitions here replace strings globally in functions.</p>
+			<p><strong>LIVEUPDATE</strong> What you type is read instanly, e.g., names and values.</p>
+			<p><strong>ANIMATION</strong> Use Start/Stop button or the Spacebar.</p>
+			<p><strong>FUNCTIONS</strong> Create <code>\bfun ... \efun</code> blocks. You can reference previously defined functions by name.</p>
+			<p><strong>VARIABLES</strong> <code>x</code> and <code>t</code> are variable and clock parameter for the functions.</p>
+			<p><strong>MARKERS</strong> <code>markers: yes</code>Make the function to be plotted with a marker.
+			Use <code>at: x-value</code> or <code>domain: [x1 x2]</code> to note where makers are set.</p>
+			<p><strong>COMMENTS</strong> <code>%</code> starts a comment for the rest of the line.</p>
+			<p style="white-space: pre-line"><strong>PARSING</strong> Incomplete or unknown tokens are gracefully ignored (fall back to defaults).
+				<code>Key: Value</code> pairs are separated by newline or semicolon <code>;</code>
+				They can be escaped with the backslash as in <code>\;</code>.
+				Keywords ignore case, e.g., <strong>axisXmin = axisXmin</strong>, function names are casesensitive, i.e., <strong>f &ne; F</strong></p>
+			<p><strong>JAVA SCRIPT</strong> may be included, e.g.,
+				<code>term: (() => { let m = 1\; if ( t>2 ){m = 3}\; return f' * m })() + (f / 2);</code>.</p><br>
+
+			<h4>EXAMPLE</h4>
+			<code>\bfun name: f1</code><br>
+			<code>term:</code><br>
+			<code>sin(x*5 + t) + sin(x*5.5 + t) + 3</code><br>
+			<code>color: red; thickness: 5; dash: [12 6]; domain: [-8 -2] [1 5] \efun</code><br>
+
+			<div id="keyword-list"></div>
+
+			<!-- here you can "hide" a button etc. in the HELP tab -->
+		</div>
+	</div>
+
+	<div class="resizer" id="dragMe"></div>
+
+	<div class="canvas-panel">
+		<div class="canvas-container">
+			<canvas id="plotCanvas"></canvas>
+		</div>
+
+		<div class="status-bar">
+
+			<div class="falstad-menu" id="mainMenu42">
+				<div class="menu-trigger">42 ☰</div>
+				<ul class="menu-content">
+					<li class="has-submenu">File
+						<ul class="submenu">
+							<li onclick="plotterInstance.saveSession()">💾 Save Session...</li>
+							<li onclick="document.getElementById('fileLoader').click()">📂 Load Local...</li>
+						</ul>
+					</li>
+
+					<li class="has-submenu">Scenes Various
+					<ul class="submenu">
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_1_over_x.txt')">1 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_20260221_081403.txt')">2 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_20260221_102711.txt')">3 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_20260221_145225.txt')">4 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_20260221_200502.txt')">5 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_20260221_220855.txt')">6 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_20260222_231813.txt')">7 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_20260223_002845.txt')">8 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_20260305_203723.txt')">9 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_circle_hyperbola_axes_sweeping.txt')">10 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_circle_hyperbola_sweeping.txt')">11 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_Einholvorgang_20260308_193931.txt')">12 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_exp_0_dot_5.txt')">13 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_JavaScript_inside_functions_20260307_205340.txt')">14 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_one_half_x_plus_2.txt')">15 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_pulsing_coordinate_system_and_functions_20260222_054130.txt')">16 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_springende_Funktion_20260306_204830.txt')">17 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_stress_text_f_prime_JavaScript_injection_20260307_152622.txt')">18 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_Stufenfunktionen_20260305_024108.txt')">19 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_Stufenfunktionen_20260306_020106.txt')">20 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_Stufenfunktionen_20260306_021316.txt')">21 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_Stufenfunktionen_20260306_022312_freeze.txt')">22 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_Stufenfunktionen_20260306_062742_moving_domain_works.txt')">23 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_Stufenfunktionen_Ampel_20260305_045323.txt')">24 </li>
+						<li onclick="loadRemoteScene('plotter_scenes/plotter_x_pow_4_and_derivatives.txt')">25 </li>
+					</ul>
+					</li>
+					<li class="has-submenu">Scenes Waves
+					<ul class="submenu">
+						<li onclick="loadRemoteScene('plotter_scenes_waves/plotter_20260227_153526.txt')">1 </li>
+						<li onclick="loadRemoteScene('plotter_scenes_waves/plotter_20260227_155736.txt')">2 </li>
+						<li onclick="loadRemoteScene('plotter_scenes_waves/plotter_20260227_155932.txt')">3 </li>
+						<li onclick="loadRemoteScene('plotter_scenes_waves/plotter_20260227_160205.txt')">4 </li>
+						<li onclick="loadRemoteScene('plotter_scenes_waves/plotter_eine_Welle_T_eq_1_lambda_eq_2.txt')">5 </li>
+						<li onclick="loadRemoteScene('plotter_scenes_waves/plotter_stehende_Welle_20260308_065205.txt')">6 </li>
+						<li onclick="loadRemoteScene('plotter_scenes_waves/plotter_stehende_Welle_Marker_20260307_184510.txt')">7 </li>
+						<li onclick="loadRemoteScene('plotter_scenes_waves/plotter_zwei_Wellen_gegenphasig_T_eq_1_lambda_eq_2_delta_s_eq_0_dot_5_lambda.txt')">8 </li>
+						<li onclick="loadRemoteScene('plotter_scenes_waves/plotter_zwei_Wellen_gegenphasig_T_eq_1_lambda_eq_2_delta_s_eq_0_dot_5_lambda_with_two_markers.txt')">9 </li>
+						<li onclick="loadRemoteScene('plotter_scenes_waves/plotter_zwei_Wellen_gegenphasig_T_eq_1_lambda_eq_2_delta_s_eq_0.txt')">10 </li>
+						<li onclick="loadRemoteScene('plotter_scenes_waves/plotter_zwei_Wellen_gleichphasig_T_eq_1_lambda_eq_2_delta_s_eq_0_dot_5_lambda.txt')">11 </li>
+						<li onclick="loadRemoteScene('plotter_scenes_waves/plotter_zwei_Wellen_gleichphasig_T_eq_1_lambda_eq_2_delta_s_eq_0.txt')">12 </li>
+						<li onclick="loadRemoteScene('plotter_scenes_waves/plotter_zwei_Wellen_gleichphasig_T_eq_1_lambda_eq_2_delta_s_eq_1_dot_5_lambda.txt')">13 </li>
+						<li onclick="loadRemoteScene('plotter_scenes_waves/plotter_zwei_Wellen_gleichphasig_T_eq_1_lambda_eq_2_delta_s_eq_1_lambda.txt')">14 </li>
+						<li onclick="loadRemoteScene('plotter_scenes_waves/plotter_zwei_Wellen_gleichphasig_T_eq_1_lambda_eq_2_delta_s_eq_2_lambda.txt')">15 </li>
+						<li onclick="loadRemoteScene('plotter_scenes_waves/plotter_zwei_Wellen_gleichphasig_T_eq_1_lambda_eq_3_delta_s_eq_0.txt')">16 </li>
+					</ul>
+					</li>
+					<li onclick="toggleDarkMode()">🌗 Toggle Theme</li>
+					<li onclick="hardReset()" style="color: #d9534f;">⚠️ Hard Factory Reset</li>
+
+				</ul>
+			</div>
+
+			<div class="nav-left-group">
+				<!-- <div id="tContainer" style="border: 1px"> -->
+				<div id="tContainer"
+					style="border: 1px solid #00FF00;
+						padding: 2px 8px; border-radius: 4px;
+						display: flex; align-items: center; gap: 5px;">
+					<span>t =</span>
+					<input type="text" id="tInput" value="0.000">
+				</div>
+			</div>
+
+			<div class="nav-center-group">
+				<label style="font-size: 11px; font-weight: bold;">SPEED</label>
+				<input type="range" id="speedSlider" min="0.5" max="5" step="0.001" value="1.5">
+			</div>
+
+
+			<!-- <button onclick="plotterInstance.saveSession()">💾 Save File</button> -->
+			<!-- <button onclick="document.getElementById('fileLoader').click()">📂 Load File</button> -->
+			<input type="file" id="fileLoader" style="display:none" onchange="plotterInstance.loadSession(event)">
+
+<!--
+			<div id="collabInfo">
+				<span>Stefan Witzgall</span>
+				<span style="font-weight: medium; margin-top: 2px;">v082 27.02.2026</span>
+			</div>
+-->
+			<div id="collabInfo" style="display:block"> <!-- use this to hide: style="display:none" -->
+				<span>v084</span>
+				<span style="font-weight: medium; margin-top: 2px;">WIT 22.03.2026, 23:50</span>
+			</div>
+
+
+			<div class="nav-right-group">
+				<button id="resetT" title="Reset Time">↺</button>
+				<button id="toggleDir" title="Reverse Direction">▶</button> <!-- the Forward Reverse button -->
+				<button id="toggleAnim"  title="Start/Stop Animation (SPACEBAR)" style="min-width:130px;
+					text-align: center">Start</button>
+				<!-- Start Animation/Stop Animation -->
+				<!-- <button onclick="toggleDarkMode()"  title="Dark/Light Scheme" id="darkToggle">🌙</button> -->
+				<!-- <button onclick="hardReset()" title="Reset To Defaults" style="color: yellow; border: 1px solid yellow; background: black; cursor: pointer;">Reset</button> -->
+			</div>
+		</div>
+	</div>
+</div>
+
+<script src="sceneLibrary.js"></script>
+<script>
+	let isResetting = false;
+	class Plotter {
+		constructor(canvasId) {
+			this.canvas = document.getElementById(canvasId);
+			this.ctx = this.canvas.getContext('2d');
+			this.functions_dev = [];
+			this.allLogs = [];
+			this.functions = [];
+			this.definitions = {};
+			this._warnedMissingTInput = false;
+			this._diagnosedTInput = false;
+			this._isScriptHealthy = true; // Start healthy
+
+			this.globals = {
+				t: 0,
+				speed: 1.5,
+				tMin: -3.141,
+				tMax: 3.141,
+				tDir: 1,
+				loopMode: 'sweep',
+				mapping: 'fill_canvas',
+				axis: {
+					xMin: -10, xMax: 10,
+					yMin: -10, yMax: 10,
+					xStep: 1, yStep: 1
+				},
+				xu: 37.8, // 37.8px = 10mm (hopefully)
+				yu: 37.8,
+				quiet: false
+			};
+
+
+			this.dynamicVarTokens = [];
+			this.scriptHasChanged = true; // Force the first render to parse
+
+			// State variables for the "Pre-calculated Transform"
+			this.currentScaleX = 1;
+			this.currentScaleY = 1;
+			this.currentOffsetX = 0;
+			this.currentOffsetY = 0;
+
+			this.animId = null;
+			this.isAnimating = false;
+
+			// The Resize "Gatekeeper"
+			window.addEventListener('resize', () => {
+				this.resize();
+				if (this.globals.loopMode === 'normal') this.render();
+			});
+
+			this.resize(); // First attempt
+			// Force a re-calculation once the browser finishes layout
+			window.addEventListener('load', () => this.resize());
+			// This second one catches the CSS after it fully loads
+			setTimeout(() => this.resize(), 100);
+
+		} // constructor of class Plotter
+
+
+		saveSession() {
+			const area0 = document.getElementById('scriptArea0').value;
+			const area1 = document.getElementById('scriptArea1').value;
+			const speed = document.getElementById('speedSlider').value;
+			const mode = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+			const isRunning = plotterInstance.isAnimating ? 'on' : 'off';
+
+			// Generate Timestamp: YYYY.MM.DD hh:mm:ss
+			const now = new Date();
+			let ts = `${now.getFullYear()}.${(now.getMonth()+1).toString().padStart(2,'0')}.${now.getDate().toString().padStart(2,'0')} ` +
+					   `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+			ts = `${now.getDate().toString().padStart(2,'0')}.${(now.getMonth()+1).toString().padStart(2,'0')}.${now.getFullYear()} ` +
+					   `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+
+			// Clean the titles to be safe for filenames (remove spaces/special chars)
+			const cleanTitle = (str) => str.replace(/[^a-z0-9]/gi, '_').substring(0, 20);
+			const titleX = plotterInstance.globals.axis.titleX || 'X';
+			const titleY = plotterInstance.globals.axis.titleY || 'Y';
+
+			// Format: 2026-02-21_Voltage_vs_Current.txt
+			// const dateStub = now.toISOString().split('T')[0];
+			// const prettyName = `${dateStub}_${cleanTitle(titleY)}_vs_${cleanTitle(titleX)}.txt`;
+
+			// Format: plotter_20260221_143857.txt
+			// 1. Generate the Default Name (your current logic)
+			const dateStub = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
+			// old: const prettyName = `plotter_${dateStub}.txt`;
+			const defaultName = `plotter_${dateStub}.txt`;
+
+			// 2. ASK THE USER (The new part)
+			const fileName = prompt("Enter filename:", defaultName);
+
+			// If user hits 'Cancel', stop the download
+			if (fileName === null) return;
+
+			// 1. METADATA SECTION
+			const metadata = [
+				`fileName: ${fileName}`,
+				`creDateTime: ${ts}`,
+				`scriptVersion: 0.82`,
+				`appearanceMode: ${mode}`,
+				`animationSpeed: ${speed}`,
+				`animationState: ${isRunning}`,
+				`tValue: ${this.globals.t}`,          // Save current value of t
+				`tDirection: ${this.globals.tDir}`    // Save current value of tDir, 1 or -1
+			].join('\n');
+
+			// 2. MARKERS
+			const metaToSetup = `% <----- END of METADATA BEGIN of SETUP ----->`;
+			const setupToFun  = `% <----- END of SETUP BEGIN of FUNCTIONS ----->`;
+
+			// 3. ASSEMBLY
+			const fullContent = `${metadata}\n${metaToSetup}\n${area0}\n${setupToFun}\n${area1}`;
+
+			// 4. DOWNLOAD (Using the chosen filename)
+			const blob = new Blob([fullContent], { type: 'text/plain' });
+			const a = document.createElement('a');
+			a.href = URL.createObjectURL(blob);
+
+			// Ensure the file ends in .txt even if the user forgot
+			a.download = fileName.toLowerCase().endsWith(".txt") ? fileName : fileName + ".txt";
+
+			document.body.appendChild(a); // Better for iPad/Mobile compatibility
+			a.click();
+
+			// Clean up
+			setTimeout(() => {
+				document.body.removeChild(a);
+				URL.revokeObjectURL(a.href);
+			}, 0);
+		} // saveSession()
+
+
+		loadSession(event) {
+			const file = event.target.files[0];
+			if (!file) return;
+
+			const reader = new FileReader();
+			reader.onload = (e) => processIncomingText(e.target.result);
+			reader.readAsText(file);
+		}
+
+
+		animate(currentTime) {
+			const mode = this.globals.loopMode;
+			const isAnimMode = ['sweep', 'cycle', 'once'].includes(mode);
+
+			if (this.isAnimating && isAnimMode) {
+				this.updateTime();
+
+				// Update the input field ...
+				const tInput = document.getElementById('tInput');
+				// ... and use .value for input field
+				if (tInput) { tInput.value = this.globals.t.toFixed(3); }
+			}
+
+			this.render();
+
+			if (this.isAnimating && isAnimMode) {
+				this.animId = requestAnimationFrame(() => this.animate());
+			} else {
+				this.stop();
+			}
+		} // end of animate()
+
+		updateTime() {
+			// Safety: If mode is not a recognized animation, don't move 't'
+			const mode = this.globals.loopMode;
+			if (!['sweep', 'cycle', 'once'].includes(mode)) return;
+
+			let delta = 0.01 * this.globals.speed * this.globals.tDir;
+			this.globals.t += delta;
+
+			if (this.globals.t > this.globals.tMax || this.globals.t < this.globals.tMin) {
+				// Somewhat overdressed, but keep it:
+				if (mode === 'sweep') {
+					this.globals.tDir *= -1;
+					// Clamp to bounds to prevent "stuck" frames
+					this.globals.t = Math.max(this.globals.tMin, Math.min(this.globals.tMax, this.globals.t));
+				} else if (mode === 'cycle') {
+					this.globals.t = this.globals.tMin;
+				} else if (mode === 'once') {
+					this.globals.t = this.globals.tMin;
+					// this.globals.t = this.globals.tMax;
+					this.isAnimating = false;
+				}
+			}
+		} // end of updateTime()
+
+
+		// Explicit Start
+		start() {
+			if (this.isAnimating) return; // Prevent multiple loops
+			this.isAnimating = true;
+			this.animate();
+		}
+
+		// Explicit Stop
+		stop() {
+			this.isAnimating = false;
+			if (this.animId) {
+				cancelAnimationFrame(this.animId);
+				this.animId = null;
+			}
+		}
+
+		resize() {
+			const container = this.canvas.parentElement;
+			this.canvas.width = container.clientWidth - 20;
+			this.canvas.height = container.clientHeight - 20;
+			this.render();
+		}
+
+
+		evalValue(val) {
+			if (!val || val.toString().trim() === "") return 0;
+
+			let processed = val.toString();
+
+			// Apply \def substitutions
+			Object.keys(this.definitions).forEach(key => {
+				// Uses \b (word boundary) to ensure "pi" doesn't match "pim"
+				const regex = new RegExp(`\\b${key}\\b`, 'g');
+				processed = processed.replace(regex, this.definitions[key]);
+			});
+
+			processed = processed.replace(/\^/g, "**");
+
+			try { // from v070
+				// 1. We pass 't' and 'Math' as arguments to the constructor
+				// 2. We use 'with(Math)' so users can type 'sin(t)' instead of 'Math.sin(t)'
+				const evaluator = new Function('t', 'Math', `
+					with(Math) {
+						return ${processed};
+					}
+				`);
+
+				// 3. We call it with the LIVE global t
+				const result = evaluator(this.globals.t, Math);
+
+				return isNaN(result) ? 0 : result;
+			} catch(e) {
+				// Fallback for raw numbers
+				let parsed = parseFloat(val);
+				return isNaN(parsed) ? 0 : parsed;
+			}
+
+
+			/*
+			try { // more strict - clears canvas if math is invalid
+				const evaluator = new Function('t', 'Math', `with(Math) { return ${processed}; }`);
+
+				try {
+					const result = evaluator(this.globals.t, Math);
+
+					if (isNaN(result)) {
+						console.warn(`Math Warning: "${val}" evaluated to NaN.`);
+						return NaN; // <--- CHANGE: Return NaN so the Wall can see it
+					}
+					return result;
+				} catch(execError) {
+					console.error(`Math Execution Error in "${val}":`, execError.message);
+					return NaN; // <--- CHANGE: Return NaN so the Wall can see it
+				}
+			} catch(compileError) {
+				return NaN; // <--- CHANGE: Return NaN so the Wall can see it
+			}
+			*/
+		} // end of evalValue()
+
+
+		debugNamingLogic(rawBlocks) {
+			// DEBUG code
+			// console.log("%c--- v0.82 SECURE GATEKEEPER ---", "color: blue; font-weight: bold;");
+
+			// 1. DYNAMIC NO-FLY LIST
+			const mathNames = Object.getOwnPropertyNames(Math);
+			const configReservedKeys = Object.keys(Plotter.CONFIG).map(k => k.toLowerCase());
+			const coreReservedKeys = corePlotterVarNames.map(k => k.toLowerCase());
+
+			const userDefNames = Object.keys(this.definitions);
+			this._isScriptHealthy = this._isScriptHealthy && true; // Keep "false" if already set
+
+			// Create a Set for fast lookup and to ensure uniqueness
+			const reserved = new Set([...mathNames, ...userDefNames, ...coreReservedKeys, ...configReservedKeys]);
+
+			this.functions_dev = rawBlocks.map((b, i) => {
+				const blockNum = i + 1;
+				const nameMatch = b.match(/name\s*:\s*([^;\n\r]*)/i);
+				const name = nameMatch ? nameMatch[1].trim() : "";
+				const isAnon = name === "";
+
+				let status = "ok";
+				let internalId = `f${blockNum}${isAnon ? '_anon' : '_named'}`;
+
+				// 2. CHECK FOR FORBIDDEN NAMES
+				if (!isAnon && reserved.has(name)) {
+					status = "!!! FORBIDDEN !!!";
+					this._isScriptHealthy = false;
+
+					// THE LOUD ALARM (Triggers the UI warning wall)
+					console.error(`%c Forbidden Name: "${name}" is a reserved keyword or user \def.`, "color: red; font-weight: bold;");
+					this.addLog('E', `Forbidden Name: "${name}" is a reserved keyword or user \def.`, true);
+
+					// RENAME to prevent the CPU loop even if the user ignores the warning
+					internalId = `safe_fn_${name}_${blockNum}`;
+				} else if (!isAnon) {
+					// If it's a valid custom name, use it!
+					internalId = name;
+				}
+
+				return {
+					blockNum: blockNum,
+					originalName: name,
+					internalId: internalId,
+					rawBlock: b, // Keep the block content for the compiler
+					status: status
+				};
+			});
+			// console.table(this.functions_dev); // DEBUG code
+			return this.functions_dev;
+		} // end of debugNamingLogic
+
+
+		parseScript(text) {
+			this._isScriptHealthy = true;
+			this.allLogs = [];
+
+			// 1. Remove comments first (to avoid protecting \; inside a comment)
+			let cleanText = text.replace(/%.*$/gm, "");
+
+			// ---------------------------------------------------
+			// DEBUG show full script
+			// console.log(cleanText);
+			// ---------------------------------------------------
+
+
+			// 2. PROTECT: Replace escaped semicolons with a temporary token
+			cleanText = cleanText.replace(/\\;/g, "___SEMICOLON___");
+
+			// 3. NORMALIZE: Ensure every raw semicolon is followed by a newline
+			// (This handles "keyword: value;nextkey: value")
+			cleanText = cleanText.replace(/;/g, ";\n");
+
+			// 4. ISOLATE: Ensure block markers are on their own lines
+			// Inject \n before/after block markers to ensure they stand alone
+			cleanText = cleanText.replace(/(\\bpre|\\epre|\\bfun|\\efun)/gi, "\n$1\n");
+
+			// ---------------------------------------------------
+			// DEBUG show full script
+			// console.log(cleanText);
+			// ---------------------------------------------------
+
+			// Strict: Regex only matches the literal key immediately followed by a colon
+			// E.g., "color : yellow" is not reckognized as a valid colour specification
+			Object.keys(Plotter.CONFIG).forEach(key => {
+				const re = new RegExp(`(\\b${key}:)`, "gi");
+				cleanText = cleanText.replace(re, "\n$1");
+				// Optional: The "Lazy Parser" check
+				// Looks for a key followed by whitespace THEN a colon
+				const lazyRe = new RegExp(`(^|\\n|;)\\s*\\b${key}\\s+:`, "gi");
+				if (lazyRe.test(text)) {
+					this.addLog('W', `Found '${key} :'. Keywords must be immediately followed by a colon (e.g., '${key}:').`, true);
+				}
+			});
+
+			// Inject \n before \def commands
+			cleanText = cleanText.replace(/\\def/gi, "\n\\def");
+
+			// --- STEP 2: LINE COLLAPSING (The "Greedy" Value Gatherer) ---
+			let lines = cleanText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+			let normalizedLines = [];
+
+			for (let line of lines) {
+				const isHeader = /^\\(bpre|epre|bfun|efun)/i.test(line);
+				const isDef = /^\\def/i.test(line);
+				const isKey = new RegExp(`^(${Object.keys(Plotter.CONFIG).join('|')}):`, 'i').test(line);
+
+				if (isHeader || isDef || isKey) {
+					normalizedLines.push(line);
+				} else if (normalizedLines.length > 0) {
+					// Append "dangling" values (like parts of a multi-line math term)
+					normalizedLines[normalizedLines.length - 1] += " " + line;
+				}
+			}
+
+
+			/*
+			// Final string-based normalization for \def and keyword formatting
+			cleanText = normalizedLines.map(line => {
+				// Normalize \def{a}{b}
+				if (line.toLowerCase().startsWith('\\def')) {
+					return line.replace(/\\def\s*\{([^}]+)\}\s*\{([^}]+)\}/gi, (m, k, v) =>
+						`\\def{${k.trim().replace(/\s+/g, '')}}{${v.trim()}}`
+					);
+				}
+				// Normalize keyword: value (single space)
+				if (line.includes(':')) {
+					let [k, ...v] = line.split(':');
+					return `${k.toLowerCase().trim()}: ${v.join(':').trim()}`;
+				}
+				return line;
+			}).join('\n');
+			*/
+
+
+			// --- STEP 2: REFINED NORMALIZATION PASS ---
+			// This happens after normalizedLines has been gathered.
+
+			cleanText = normalizedLines.map(line => {
+				// 1. Handle \def (unchanged)
+				if (line.toLowerCase().startsWith('\\def')) {
+					return line.replace(/\\def\s*\{([^}]+)\}\s*\{([^}]+)\}/gi, (m, k, v) =>
+						`\\def{${k.trim().replace(/\s+/g, '')}}{${v.trim()}}`
+					);
+				}
+
+				// 2. The Keyword Atomizer (Handles "key: value; ; ;" and "key: val; nextkey: val")
+				// First, split by literal semicolons (since escaped ones are safely hidden)
+				let segments = line.split(';');
+
+				let cleanedSegments = segments.map(seg => {
+					let s = seg.trim();
+					if (!s) return null; // Discard empty segments like "; ;"
+
+					// Check if this segment contains a keyword (Strict or Lazy)
+					const configKeys = Object.keys(Plotter.CONFIG).join('|');
+					const keyMatch = s.match(new RegExp(`^(${configKeys})\\s*:`, 'i'));
+
+					if (keyMatch) {
+						let [k, ...v] = s.split(':');
+						// Normalize to "key: value" (Case 2)
+						return `${k.toLowerCase().trim()}: ${v.join(':').trim()}`;
+					}
+
+					// If it's not a key, it's just a value segment (like the rest of a 'term')
+					return s;
+				}).filter(s => s !== null);
+
+				// Join with newlines so every instruction gets its own line
+				return cleanedSegments.join('\n');
+
+			}).join('\n');
+
+			// FINAL STEP: Restore the literal semicolons we protected at the very start
+			cleanText = cleanText.replace(/___SEMICOLON___/g, ';');
+
+
+			// ---------------------------------------------------
+			// DEBUG show full script
+			// console.log(cleanText);
+			// ---------------------------------------------------
+
+			// --- STEP 3: THE STRUCTURAL LINTER ---
+			// to do: this.checkStructuralIntegrity(normalizedLines);
+
+			// --- STEP 4: PROCEED TO PARSING BLOCKS ---
+			// (Existing logic to extract \bpre and \bfun blocks from cleanText)
+
+
+			// 1. Find all function blocks
+			const blockMatches = [...cleanText.matchAll(/\\bfun([\s\S]*?)\\efun/g)];
+			// 2. Extract the content of each block into an array
+			const rawBlocksArray = blockMatches.map(m => m[1].trim());
+			// 3. Pass that array to the validator
+			this.debugNamingLogic(rawBlocksArray);
+
+			// ---------------------------------------------------
+			// DEBUG show full script
+			// console.log(cleanText);
+			// ---------------------------------------------------
+
+			this.definitions = {};
+			// const defMatches = cleanText.matchAll(/\\def\s*\{(\w+)\}\s*\{(.*?)\}/g);
+			// More permissive, let "Handle invalid varName" spit out a warning later:
+			// const defMatches = cleanText.matchAll(/\\def\s*\{(.*?)\}\s*\{(.*?)\}/g);
+			// Or this way: stop the name at the first closing curly brace:
+			const defMatches = cleanText.matchAll(/\\def\s*\{(.*?)\}\s*\{(.*?)\}/g);
+
+			// This regex ensures it starts with a letter and continues with letters, numbers, underscores
+			const validJsName = /^[a-zA-Z][a-zA-Z0-9_]*$/;
+			// const validJsName = /^[\w]+$/;
+
+			// Build these lists with lowercase keys or names because
+			// we will do a case insensitive test.
+			const configReservedKeys = Object.keys(Plotter.CONFIG).map(k => k.toLowerCase());
+			const coreReservedKeys = corePlotterVarNames.map(k => k.toLowerCase());
+
+			for (const m of defMatches) {
+				const varName = m[1].trim();
+				const rawValue = m[2].trim();
+				const lowerName = varName.toLowerCase();
+
+				// Catch use of reserved names
+				const macroName = varName.toLowerCase();
+				if (coreReservedKeys.includes(lowerName) || configReservedKeys.includes(lowerName)) {
+					this._isScriptHealthy = false;
+					this.addLog('E', `Cannot redefine core variable "${varName}".`, true);
+					continue;
+				}
+
+				// Handle invalid varName
+				if (!validJsName.test(varName)) {
+					console.error(`Empty or invalid varName: \\def{${varName}}{${rawValue}} skipped`);
+					this.addLog('W', `Empty or invalid varName: \\def{${varName}}{${rawValue}} skipped`, false);
+					continue;
+				}
+
+				// Handle empty
+				if (rawValue.trim() === "") {
+					console.error(`Empty or invalid value: \\def{${varName}}{${rawValue}} set to 0`);
+					this.addLog('W', `Empty or invalid value: \\def{${varName}}{${rawValue}} set to 0`, false);
+					this.definitions[varName] = "0";
+					continue;
+				}
+
+				// Allow Math functions
+				if (rawValue.startsWith("Math.")) {
+					this.definitions[varName] = rawValue;
+					continue;
+				}
+
+				// 3. YOUR AWK REGEX CHECK
+				// From GAWK: Effective AWK Programming by Robbins 2021, ch. 10.2.1
+				// p. 236 function mystrtonum, I stole the following regex:
+				// const floatRegex = /^[-+]?([0-9]+([.][0-9]*([Ee][0-9]+)?)?|([.][0-9]+([Ee][-+]?[0-9]+)?))$/;
+				// Expects scientific notation, if any, with decimal point, as in 12.0E5 NOT 12E5
+				// More permissive:
+				// UPDATED AWK-derived REGEX
+				// This allows: 13, 13.0, .13, 13e3, 13.5E-2, etc.
+				// const floatRegex = /^[+-]?[0-9]*\.?[0-9]+([eE][+-]?[0-9]+)?$/;
+				// The above doesn't allow "1.". But this:
+				const floatRegex = /^[+-]?([0-9]+\.?[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?$/;
+
+				if (!floatRegex.test(rawValue.trim())) {
+					console.error(`Invalid numerical definition: \\def{${varName}}{${rawValue}}`);
+					this.addLog('E', `Invalid definition: \\def{${varName}}{${rawValue}}`, true);
+					this.definitions[varName] = "0"; // Safe default
+				} else {
+					// It matches the float regex, so it is safe to use
+					this.definitions[varName] = rawValue.trim();
+				}
+			}
+
+
+			// ---------------------------------------------------
+			// console.log(`DEBUG in parseScript: mapping=[${this.globals.mapping}]`);
+			// ---------------------------------------------------
+
+
+			// 2. Set fallback for pi if not defined
+			if (!this.definitions['pi']) {
+				this.definitions['pi'] = 'Math.PI';
+			}
+
+			// 1. Define the Math constants/functions string
+			const mathKeys = Object.getOwnPropertyNames(Math)
+				.filter(key => typeof Math[key] === 'function' || typeof Math[key] === 'number')
+				.join(', ');
+
+			// 2. SECOND: Now that mathKeys exists, filter your definitions
+			const forbiddenNames = mathKeys.split(',').map(s => s.trim());
+
+			const macroKeys = Object.entries(this.definitions || {})
+				.filter(([key]) => !forbiddenNames.includes(key))
+				.map(([key, val]) => `const ${key} = ${val};`)
+				.join('\n');
+
+			// 3. THIRD: Proceed to your loops (Pass 3, Pass 5, etc.)
+
+			const preMatch = cleanText.match(/\\bpre([\s\S]*?)\\epre/);
+			if (preMatch) {
+				const content = preMatch[1];
+
+				const getPreVal = (key, fallback) => {
+					// The [^;]* means "anything EXCEPT a semicolon"
+					// Added 'i' flag for case-insensitive keyword matching
+					const m = content.match(new RegExp(`${key}:\\s*?([^\\n\\r]*)`, 'i'));
+					// This matches all up to the first ; but not necessarily until \n:
+					// (**) const m = content.match(new RegExp(`${key}:\\s*?([^;\\n\\r]*)`, 'i'));
+					return m ? m[1].trim() : fallback;
+				};
+
+				const getPreArr = (key) => {
+					// Added 'i' flag here too
+					const m = content.match(new RegExp(`${key}:\\s*\\[(.*?)\\]`, 'i'));
+					return m ? m[1].split(/[\s,]+/).filter(x => x).map(v => this.evalValue(v)) : null;
+				};
+
+				// 1. Get the range using your existing helper
+				const range = getPreArr('tRange');
+
+				// 2. The v0.81 "Health Check"
+				// Check if range exists, has 2 parts, and BOTH are valid numbers
+				if (range && range.length === 2) {
+					// Check if either value is NaN (meaning the math failed or variable is missing)
+					if (isNaN(range[0]) || isNaN(range[1])) {
+						this.addLog('E', "tRange Error: Contains undefined variables or invalid math.", true);
+						console.error("PREAMBLE ERROR: tRange contains undefined variables or invalid math.");
+						// Fallback to safe values so the engine doesn't loop/crash
+						this.globals.tMin = 0;
+						this.globals.tMax = 10;
+					} else {
+						this.globals.tMin = range[0];
+						this.globals.tMax = range[1];
+					}
+				}
+
+
+				// Overwrite only if present in the preamble
+				this.globals.xu = this.evalValue(getPreVal('xu', this.globals.xu));
+				this.globals.yu = this.evalValue(getPreVal('yu', this.globals.yu));
+
+				// console.log(`DEBUG in parseScript: mapping=[${this.globals.mapping}]`);
+
+				this.globals.loopMode = getPreVal('loopMode', 'normal').toLowerCase();
+				this.globals.mapping = getPreVal('mapping', 'fill_canvas').toLowerCase();
+
+				// console.log(`DEBUG in parseScript: mapping=[${this.globals.mapping}]`);
+
+				const quietSetting = getPreVal('quiet', 'no').toLowerCase();
+				// If it's 'yes' or 'true', we mute the warning wall
+				this.globals.quiet = (quietSetting === 'yes' || quietSetting === 'true');
+
+				const speed = getPreArr('animSpeed');
+				if (speed && speed.length === 2) {
+					const slider = document.getElementById('speedSlider');
+					if (slider) {
+						slider.min = speed[0];
+						slider.max = speed[1];
+						this.globals.speed = Math.min(Math.max(this.globals.speed, speed[0]), speed[1]);
+						slider.value = this.globals.speed;
+					}
+				}
+
+
+				this.dynamicVarTokens = {}; // Clear previous tokens
+
+				const potentialDynamics = {
+					ordXpos:    getPreVal('ordXpos', '0'),
+					absYpos:    getPreVal('absYpos', '0'),
+					xu:         getPreVal('xu', '37.8'),
+					yu:         getPreVal('yu', '37.8'),
+					xMin:       getPreVal('axisXmin', '-10'),
+					xMax:       getPreVal('axisXmax', '10'),
+					yMin:       getPreVal('axisYmin', '-10'),
+					yMax:       getPreVal('axisYmax', '10'),
+					xStep:      getPreVal('gridXstep', '1'),     // Now included!
+					yStep:      getPreVal('gridYstep', '1'),     // Now included!
+					xLabelstep: getPreVal('labelsXstep', '1'),
+					yLabelstep: getPreVal('labelsYstep', '1'),   // Now included!
+					speed:      getPreVal('animationSpeed', this.globals.speed.toString())
+				};
+
+				// Only store the ones that actually contain 't'
+				for (let key in potentialDynamics) {
+					if (potentialDynamics[key].includes('t')) {
+						this.dynamicVarTokens[key] = potentialDynamics[key];
+					}
+				}
+
+				// We still need to evaluate EVERYTHING once to set the baseline
+				this.globals.axis = {
+					// These come from our "potential" list (evaluated once)
+					xMin:       this.evalValue(potentialDynamics.xMin),
+					xMax:       this.evalValue(potentialDynamics.xMax),
+					yMin:       this.evalValue(potentialDynamics.yMin),
+					yMax:       this.evalValue(potentialDynamics.yMax),
+					xStep:      this.evalValue(potentialDynamics.xStep),
+					yStep:      this.evalValue(potentialDynamics.yStep),
+					xLabelstep: this.evalValue(potentialDynamics.xLabelstep),
+					yLabelstep: this.evalValue(potentialDynamics.yLabelstep),
+					absYpos:    this.evalValue(potentialDynamics.absYpos),
+					ordXpos:    this.evalValue(potentialDynamics.ordXpos),
+
+					// These are truly static/arrays and don't need the dynamic treatment
+					xLabels:    getPreArr('xLabels'),
+					yLabels:    getPreArr('yLabels'),
+					titleX:     getPreVal('titleX', 'x'),
+					titleY:     getPreVal('titleY', 'y')
+				};
+
+				// Also set the global units for the first frame
+				this.globals.xu = this.evalValue(potentialDynamics.xu);
+				this.globals.yu = this.evalValue(potentialDynamics.yu);
+				// If evalValue returns NaN, it falls back to 1 (or the previous speed)
+				this.globals.speed = this.evalValue(potentialDynamics.speed) || 1;
+
+				// console.log(this.globals.initialPlotterState.xu);
+				// console.log(`DEBUG in parseScript: mapping=[${this.globals.mapping}]`);
+
+
+				// begin WARNING MECHANISM for xu, yu
+				const xuIsDynamic = getPreVal('xu', '').includes('t');
+				const yuIsDynamic = getPreVal('yu', '').includes('t');
+				const isAuto = this.globals.mapping !== 'physical';
+
+				// Just for fun: Show message in collabInfo:
+				const infoEl = document.getElementById('collabInfo');
+
+				if ((xuIsDynamic || yuIsDynamic) && isAuto) {
+					// 1. Store the original text if you haven't yet (optional)
+					if (!infoEl.dataset.original) infoEl.dataset.original = infoEl.innerHTML;
+
+					// 2. Override with the Warning
+					// infoEl.style.backgroundColor = "black";
+					infoEl.style.color = "#ff2211";
+					// infoEl.style.fontWeight = "bold";
+					infoEl.style.textWrap = "balance"; // Ensures lines are roughly equal length
+					infoEl.style.textTransform="none";
+					// infoEl.style.textAlign = "center";
+					infoEl.innerHTML = "⚠️ WARNING: xu/yu ignored\nin " + this.globals.mapping + " mode!";
+				} else {
+					// 3. Restore to original state
+					infoEl.style.backgroundColor = ""; // Resets to CSS default
+					infoEl.style.color = "";
+					infoEl.style.fontWeight = "";
+					infoEl.style.textWrap = "";
+					infoEl.style.textTransform="Uppercase";
+					if (infoEl.dataset.original) infoEl.innerHTML = infoEl.dataset.original;
+				}
+				// end WARNING MECHANISM for xu, yu
+			}
+
+			const newFunctions = [];
+
+			// --- PREPARATION ---
+			// const cleanText = this.functions_input || ""; // Your input source
+			const runtimeScope_dev = {};
+			// dev code obsolete - defined above: const mathKeys = Object.getOwnPropertyNames(Math).filter(k => typeof Math[k] === 'function').join(', ');
+
+			// --- PASS 1: THE HARVESTER (Identify and Sanitize) ---
+			const funMatches = [...cleanText.matchAll(/\\bfun([\s\S]*?)\\efun/g)];
+
+			this.functions_dev = funMatches.map((match, i) => {
+				const block = match[1];
+				const getVal = (key) => {
+					// (**)  working, but stops at semicolons: const m = block.match(new RegExp(key + ':\\s*([^;\\n\\r]*)', 'i'));
+					const m = block.match(new RegExp(key + ':\\s*([^\\n\\r]*)', 'i'));
+					return m ? m[1].trim() : "";
+				};
+
+				const rawName = getVal('name');
+				let final_uName = "";
+
+				// The Collector: alphanumeric base + trailing spaces/quotes
+				const primeMatch = rawName.match(/^([a-zA-Z0-9_]+)([\s']*)$/);
+				if (primeMatch) {
+					const base = primeMatch[1];
+					const n = (primeMatch[2].match(/'/g) || []).length;
+					// Rules: if quotes exist -> _pnBase; else if starts with number -> u_Base; else Base
+					if (n > 0) final_uName = `_p${n}${base}`;
+					else final_uName = /^[a-zA-Z]/.test(base) ? base : `u_${base}`;
+				}
+
+				return {
+					uName: final_uName || `anon_${i+1}`,
+					internalId: `f${i + 1}_named`,
+					rawBlock: block,
+					term: getVal('term').replace(/\^/g, "**")
+				};
+			});
+
+			// --- PASS 2: THE TRANSLATOR (Recursive Linking) ---
+			// We sort functions by name length (longest first) to prevent partial replacement
+			const sortedFns = [...this.functions_dev].sort((a, b) => b.uName.length - a.uName.length);
+
+			this.functions_dev.forEach(fn => {
+				let t = fn.term;
+
+				// A. Harvest primes in the formula itself (e.g., f ' ' -> _p2f)
+				t = t.replace(/([a-zA-Z0-9_]+)([\s']+)/g, (m, base, tail) => {
+					const n = (tail.match(/'/g) || []).length;
+					return n > 0 ? `_p${n}${base}` : base + tail;
+				});
+
+				// B. Replace Names with Scope Calls
+				sortedFns.forEach(other => {
+					if (!other.uName) return;
+					const regex = new RegExp(`\\b${other.uName}\\b`, 'g');
+					t = t.replace(regex, (match, offset, fullStr) => {
+						const nextChar = fullStr[offset + match.length];
+						// Auto-append (x) if not a function call already
+						return nextChar === '(' ? `scope.${other.internalId}` : `scope.${other.internalId}(x)`;
+					});
+				});
+
+				fn.translatedTerm = t;
+			});
+
+
+			// --- PASS 3: THE COMPILER (Main Term & Domain) ---
+			// --- PASS 3: THE COMPILER (Main Term & Domain) ---
+			const self = this;
+
+			this.functions_dev.forEach(fn => {
+
+				// 1. HELPER: DATA EXTRACTION
+				// Finds the value of a key (e.g., "domain:") within the raw function block
+				const getRaw = (key) => {
+					const regex = new RegExp(`${key}:\\s*([^;\\n\\r]*)`, 'i');
+					const m = fn.rawBlock.match(regex);
+					return m ? m[1].trim() : null;
+				};
+
+				// Finds a floating point number specifically (useful for 'at' or 'thickness')
+				const getRawFloat = (key) => {
+					const floatPattern = /[+-]?[0-9]*\.?[0-9]+([eE][+-]?[0-9]+)?/;
+					const regex = new RegExp(`${key}:\\s*(${floatPattern.source})`, 'i');
+					const m = fn.rawBlock.match(regex);
+					return m ? m[1] : null;
+				};
+
+				// 2. COMPILE MAIN MATH TERM
+				try {
+					const mathBody = `
+						const { ${mathKeys} } = Math;
+						${macroKeys}
+						try {
+							const val = (${fn.translatedTerm});
+							return (typeof val === 'number' && isFinite(val)) ? val : NaN;
+						} catch(e) { return NaN; }
+					`;
+					fn.exec_dev = new Function('x', 't', 'Math', 'scope', mathBody);
+				} catch(e) {
+					fn.exec_dev = () => NaN;
+				}
+
+				// 3. EXTRACT & PRE-PROCESS DOMAIN
+				let rawDom = getRaw('domain') ?? "";
+				const rawAt = getRaw('at');
+				const rawMarker = getRaw('marker');
+
+				// Handle the 'at' shortcut for points
+				if (rawAt) {
+					rawDom = `[(${rawAt}), (${rawAt})]`;
+					if (!rawMarker || rawMarker.toLowerCase() !== 'yes') {
+						const warnMsg = `Point at ${rawAt} for "${fn.uName}" might be invisible (missing marker:yes).`;
+						this.addLog('W', warnMsg, true);
+					}
+				}
+
+				// Inject \def macros into the domain string before parsing
+				for (const [key, value] of Object.entries(this.definitions)) {
+					const entryRegex = new RegExp(`\\b${key}\\b`, 'g');
+					rawDom = rawDom.replace(entryRegex, `(${value})`);
+				}
+
+				// 4. SMART DOMAIN PARSER (The Multi-Segment Harvester)
+				// 4. MULTI-SEGMENT HARVESTER (Fixed for multiple brackets)
+				fn.domFuncs = [];
+				if (rawDom) {
+					// Find everything inside [ ... ]
+					const bracketRegex = /\[([^\]]+)\]/g;
+					let bracketMatch;
+					let foundBrackets = false;
+
+					while ((bracketMatch = bracketRegex.exec(rawDom)) !== null) {
+						foundBrackets = true;
+						const content = bracketMatch[1].trim();
+						// Split by comma if present, otherwise by whitespace
+						let parts = content.includes(',') ? content.split(',') : content.split(/\s+/);
+
+						processParts(parts);
+					}
+
+					// Fallback: If no brackets were found, try splitting the whole string by commas
+					if (!foundBrackets && rawDom.includes(',')) {
+						processParts(rawDom.split(','));
+					}
+					// Final Fallback: Simple space-separated pair (e.g., "0 10")
+					else if (!foundBrackets) {
+						processParts(rawDom.trim().split(/\s+/));
+					}
+				}
+
+				// INTERNAL HELPER: Compiles pairs into functions
+				function processParts(allParts) {
+					const cleanParts = allParts.map(p => p.trim()).filter(p => p.length > 0);
+
+					// We process these in pairs (start, end)
+					for (let i = 0; i < cleanParts.length; i += 2) {
+						if (!cleanParts[i+1]) break;
+
+						const seg = [cleanParts[i], cleanParts[i+1]].map(expr => {
+							try {
+								const cleanExpr = expr.replace(/\^/g, "**");
+								const f = new Function('t', 'Math', 'scope', `
+									const { ${mathKeys} } = Math;
+									${macroKeys}
+									try {
+										const val = Number(${cleanExpr});
+										return isFinite(val) ? val : NaN;
+									} catch(e) { return NaN; }
+								`);
+								// Safety test
+								try { f(0, Math, self.definitions); } catch(e) { return () => NaN; }
+								return f;
+							} catch(e) { return () => NaN; }
+						});
+						fn.domFuncs.push(seg);
+					}
+				}
+			});
+
+
+			// --- PASS 4: SCOPE BINDING (Recursion) ---
+			this.functions_dev.forEach(fn => {
+				runtimeScope_dev[fn.internalId] = (x, t) => {
+					const currentT = (t !== undefined) ? t : (self.globals.t || 0);
+					if (typeof fn.exec_dev === 'function') {
+						try { return fn.exec_dev(x, currentT, Math, runtimeScope_dev); } catch(e) { return 0; }
+					}
+					return 0;
+				};
+			});
+
+			// --- PASS 5: THE BRIDGE ---
+			this.functions = this.functions_dev.map(fn => {
+				const getAttr = (key, fallback) => {
+					// sometimes too greedy:
+					const m = fn.rawBlock.match(new RegExp(`${key}:\\s*([^;\\n\\r]*)`, 'i'));
+					// doesn't the b in dash: a b
+					// const m = fn.rawBlock.match(new RegExp(`${key}:[ \t]*([^; \n\r\t]*)`, 'i'));
+					return m ? m[1].trim() : fallback;
+				};
+
+
+				/* Debug code
+				// --- CAPTURE AND LOG HERE ---
+				const rawMarker = getAttr('markerType', 'bullet');
+				console.log(`DEBUG [${fn.uName}]: raw=[${rawMarker}]`);
+				// ----------------------------
+				*/
+
+				return {
+					name: fn.uName,
+					exec: (x, t) => {
+						if (typeof fn.exec_dev === 'function') return fn.exec_dev(x, t, Math, runtimeScope_dev);
+						return 0;
+					},
+					visible: !(['no', 'false'].includes(getAttr('plot', 'yes').toLowerCase())),
+					color: getAttr('color', 'green'),
+					thickness: parseFloat(getAttr('thickness', '2')) || 2,
+					dash: getAttr('dash', '').replace(/[\[\]]/g, '').split(/[\s,]+/).map(Number).filter(n => !isNaN(n)),
+					marker: ['yes', 'true', 'on'].includes(getAttr('marker', 'no').toLowerCase()),
+					markerType: getAttr('markerType', 'bullet').toLowerCase() || 'bullet',
+					// works: markerType: (getAttr('markerType', 'bullet').trim().split(';')[0] || 'bullet').toLowerCase(),
+					// dev code:  markerType: ('').toLowerCase() || ('bullet').toLowerCase(),
+
+					markerSize: parseFloat(getAttr('markerSize', '5')) || 5,
+					scopeRef: runtimeScope_dev,
+
+					// DYNAMIC DOMAIN GETTER
+					get domain() {
+						const t = self.globals.t || 0;
+
+						// If we have segments, calculate each one
+						if (fn.domFuncs && fn.domFuncs.length > 0) {
+							return fn.domFuncs.map(seg => {
+								let start = seg[0] ? seg[0](t, Math) : self.globals.axis.xMin;
+								let end   = seg[1] ? seg[1](t, Math) : self.globals.axis.xMax;
+								return [start, end];
+							});
+						}
+
+						// Default: Full Axis
+						return [[self.globals.axis.xMin, self.globals.axis.xMax]];
+					}
+				};
+			}); // return block
+			// this.functions_dev[0].warning = "DEBUG: Reserved name 'sin' detected!";
+		} // parseScript()
+
+
+		toScreenX(mathX) {
+			return (mathX * this.currentScaleX) + this.currentOffsetX;
+		}
+
+		toScreenY(mathY) {
+			// Inverted for Canvas Y
+			return this.currentOffsetY - (mathY * this.currentScaleY);
+		}
+
+		// Inverse for the pixel-walk
+		toMathX(screenX) {
+			return (screenX - this.currentOffsetX) / this.currentScaleX;
+		}
+
+
+		render() {
+			// Clear only warnings generated during rendering (like grid density)
+			// this.allLogs = this.allLogs.filter(log => log.persistent === true);
+
+			// TIME UPDATE: Only advance 't' automatically if animating
+			// (If not animating, we assume 't' was changed manually via the UI)
+			// if (this.isAnimating) { this.updateT(); }
+
+			// Update ONLY what depends on time (t)
+			// This loop stays, but ensure it's fast.
+			for (const [key, token] of Object.entries(this.dynamicVarTokens)) {
+				const result = this.evalValue(token);
+
+				/* DEBUG code
+				if (isNaN(result)) {
+					console.log(`DEBUG: Invalid Token -> Key: ${key}, RawFormula: "${token}", EvaluatedResult: ${result}`);
+				} else {
+					console.log(`DEBUG: Valid Token   -> Key: ${key}, RawFormula: "${token}", EvaluatedResult: ${result}`);
+				}
+				*/
+
+				if (key === 'xu') this.globals.xu = result;
+				else if (key === 'yu') this.globals.yu = result;
+				else if (key === 'speed') this.globals.speed = result;
+				else if (this.globals.axis.hasOwnProperty(key)) {
+					this.globals.axis[key] = result;
+				}
+			}
+
+			// 2. THE SETUP
+			const isDark = document.body.classList.contains('dark-mode');
+			this.prepareCanvas(isDark);
+			this.updateTransform();
+
+			// 3. THE DRAWING (The Physical Pass)
+			const ctx = this.ctx;
+			ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+			ctx.save();
+			this.applyClipping();
+
+			let currentFrameWarnings = [];
+
+			// --- SMART WATCHDOG WITH FALLBACKS ---
+			const axis = this.globals.axis;
+			const canvasWidth  = this.canvas.width;
+			const canvasHeight = this.canvas.height;
+
+			if ((axis.xMax - axis.xMin) > canvasWidth * axis.xStep) {
+				currentFrameWarnings.push({ type: 'W', text: 'gridXstep too small, fall back to 1', persistent: false });
+				axis.xStep = 1;
+			}
+			if ((axis.yMax - axis.yMin) > canvasHeight * axis.yStep) {
+				currentFrameWarnings.push({ type: 'W', text: 'gridYstep too small, fall back to 1', persistent: false });
+				axis.yStep = 1;
+			}
+			if ((axis.xMax - axis.xMin) > canvasWidth * axis.xLabelstep) {
+				currentFrameWarnings.push({ type: 'W', text: 'xLabelstep too small, fall back to 1', persistent: false });
+				axis.xLabelstep = 1;
+			}
+			if ((axis.yMax - axis.yMin) > canvasHeight * axis.yLabelstep) {
+				currentFrameWarnings.push({ type: 'W', text: 'yLabelstep too small, fall back to 1', persistent: false });
+				axis.yLabelstep = 1;
+			}
+
+			/*
+			if ((axis.xMax - axis.xMin) > canvasWidth * axis.xStep) {
+				currentFrameWarnings.push({ type: 'W', text: 'gridXstep too small fallback to 1', persistent: false });
+				axis.xStep = 1;
+			}
+			*/
+
+			// Remove OLD transient warnings and add the FRESH ones
+			this.allLogs = [
+				...this.allLogs.filter(log => log.persistent), // Keep parser errors
+				...currentFrameWarnings                        // Add current frame warnings
+			];
+
+			this.drawGrid(isDark);
+			this.drawAxes(isDark);
+
+			if (this._isScriptHealthy) {
+				// Only do the heavy math if no critical names are missused
+				this.drawFunctions();
+			}
+
+			ctx.restore();
+
+			this.drawLabels(isDark);
+			this.drawTitles(isDark);
+
+			// Show the errors collected during the last parseScript call
+			this.wallWarnings();
+
+
+			// 4. THE UI: Minimal update
+			// Exemplary code, in case neither the existence nor
+			// the type of tDisplay is know and we don't clutter
+			// the console with with a warning every frame.
+			const tDisp = document.getElementById('tInput');
+			if (tDisp) {
+				// Only update if user isn't typing in tInput:
+				if (document.activeElement !== tDisp) {
+					// If it's a div/span use innerText, if it's an input use .value
+					const val = `${this.globals.t.toFixed(3)}`;
+					if (tDisp.tagName === 'INPUT') {
+						tDisp.value = val;
+						if (!this._diagnosedTInput) {
+							// ---------------------------------------------------
+							// console.warn('tInput is INPUT.');
+							// ---------------------------------------------------
+							this._diagnosedTInput = true;
+						}
+					} else {
+						tDisp.innerText = val;
+						// ---------------------------------------------------
+						// console.warn('tInput is no INPUT.');
+						// ---------------------------------------------------
+						this._diagnosedTInput = true;
+					}
+				}
+			} else {
+				// DEBUG DIAGNOSTIC ALERT: Only shows if the element is missing from your HTML
+				if (!this._warnedMissingTInput) {
+					console.warn(`Inside render\(\): Element ID "tInput" not found. Skipping UI update.`);
+					this._warnedMissingTInput = true;
+				}
+			}
+		} // end of render()
+
+
+		drawGrid(isDark) {
+			const axis = this.globals.axis;
+			const ctx = this.ctx;
+			ctx.strokeStyle = isDark ? "#666" : "#222";
+			ctx.lineWidth = 0.7;
+			ctx.beginPath();
+
+			// Vertical Grid lines
+			for (let x = Math.ceil(axis.xMin / axis.xStep) * axis.xStep; x <= axis.xMax; x += axis.xStep) {
+				const px = this.toScreenX(x);
+				ctx.moveTo(px, this.toScreenY(axis.yMin));
+				ctx.lineTo(px, this.toScreenY(axis.yMax));
+			}
+			// Horizontal Grid lines
+			for (let y = Math.ceil(axis.yMin / axis.yStep) * axis.yStep; y <= axis.yMax; y += axis.yStep) {
+				const py = this.toScreenY(y);
+				ctx.moveTo(this.toScreenX(axis.xMin), py);
+				ctx.lineTo(this.toScreenX(axis.xMax), py);
+			}
+			ctx.stroke();
+		} // end of drawGrid
+
+
+		// Draw axes and ticks.
+		drawAxes(isDark) {
+			const axis = this.globals.axis;
+			const ctx = this.ctx;
+			const pyAxis = this.toScreenY(axis.absYpos || 0);
+			const pxAxis = this.toScreenX(axis.ordXpos || 0);
+
+			ctx.strokeStyle = isDark ? "#eee" : "#000";
+			ctx.lineWidth = 1.5;
+			ctx.beginPath();
+
+			// 1. Draw main Axis lines
+			ctx.moveTo(this.toScreenX(axis.xMin), pyAxis);
+			ctx.lineTo(this.toScreenX(axis.xMax), pyAxis);
+			ctx.moveTo(pxAxis, this.toScreenY(axis.yMin));
+			ctx.lineTo(pxAxis, this.toScreenY(axis.yMax));
+
+			// 2. THE MISSING TICKS: X-Axis Ticks
+			// Using xStep (or labelsXstep if you prefer)
+			for (let x = Math.ceil(axis.xMin / axis.xStep) * axis.xStep; x <= axis.xMax; x += axis.xStep) {
+				// if (Math.abs(x) < 0.0001) continue; // Skip the origin tick
+				const px = this.toScreenX(x);
+				ctx.moveTo(px, pyAxis - 5); // Start 5px above
+				ctx.lineTo(px, pyAxis + 5); // End 5px below
+			}
+
+			// 3. THE MISSING TICKS: Y-Axis Ticks
+			for (let y = Math.ceil(axis.yMin / axis.yStep) * axis.yStep; y <= axis.yMax; y += axis.yStep) {
+				// if (Math.abs(y) < 0.0001) continue; // Skip the origin tick
+				const py = this.toScreenY(y);
+				ctx.moveTo(pxAxis - 5, py); // Start 5px left
+				ctx.lineTo(pxAxis + 5, py); // End 5px right
+			}
+
+			ctx.stroke();
+		} // end of drawAxes()
+
+
+		drawTitles(isDark) {
+			const axis = this.globals.axis;
+			const ctx = this.ctx;
+
+			// Calculate the physical boundaries of the plot
+			const xMin = this.toScreenX(axis.xMin);
+			const xMax = this.toScreenX(axis.xMax);
+			const yMax = this.toScreenY(axis.yMax);
+			const yMin = this.toScreenY(axis.yMin);
+
+			ctx.fillStyle = isDark ? "#fff" : "#000";
+			ctx.font = "bold 15px Arial";
+
+			// X-Axis Title (Bottom Right of the CS)
+			if (axis.titleX) {
+				ctx.textAlign = "right";
+				ctx.textBaseline = "bottom";
+				// Place it just above the X-axis line at the right edge
+				const pyAxis = this.toScreenY(axis.absYpos || 0);
+				ctx.fillText(axis.titleX, xMax - 5, pyAxis - 5);
+			}
+
+			// Y-Axis Title (Top Left of the CS)
+			if (axis.titleY) {
+				ctx.textAlign = "left";
+				ctx.textBaseline = "top";
+				// Place it to the right of the Y-axis line at the top edge
+				const pxAxis = this.toScreenX(axis.ordXpos || 0);
+				ctx.fillText(axis.titleY, pxAxis + 10, yMax + 5);
+			}
+		}
+
+		drawLabels(isDark) {
+			const axis = this.globals.axis;
+			const ctx = this.ctx;
+			const pyAxis = this.toScreenY(axis.absYpos || 0);
+			const pxAxis = this.toScreenX(axis.ordXpos || 0);
+
+			ctx.fillStyle = isDark ? "#fff" : "#000";
+			ctx.font = "18px Arial";
+
+			// X-Labels
+			ctx.textAlign = "center";
+			ctx.textBaseline = "top";
+			for (let x = Math.ceil(axis.xMin / axis.xLabelstep) * axis.xLabelstep; x <= axis.xMax; x += axis.xLabelstep) {
+				if (x === axis.ordXpos) continue; // Skip origin
+				ctx.fillText(Number.isInteger(x) ? x : x.toFixed(2), this.toScreenX(x), pyAxis + 10);
+			}
+
+			// Y-Labels
+			ctx.textAlign = "right";
+			ctx.textBaseline = "middle";
+			for (let y = Math.ceil(axis.yMin / axis.yLabelstep) * axis.yLabelstep; y <= axis.yMax; y += axis.yLabelstep) {
+				if (y === axis.absYpos) continue; // Skip origin
+				ctx.fillText(Number.isInteger(y) ? y : y.toFixed(2), pxAxis - 10, this.toScreenY(y));
+			}
+		} // end of drawLabels()
+
+
+
+		drawFunctions() {
+			const ctx = this.ctx;
+			this.functions.forEach(fn => {
+				if (!fn.visible) return;
+
+				ctx.strokeStyle = fn.color;
+				ctx.lineWidth = fn.thickness;
+				ctx.setLineDash(fn.dash || []);
+
+				fn.domain.forEach(segment => {
+					// 1. Get exact Math boundaries
+					// Inside drawFunctions() -> fn.domain.forEach(segment => { ...
+					// REPLACE THESE TWO LINES:
+					// let mathStart = this.evalValue(segment[0]);
+					// let mathEnd   = this.evalValue(segment[1]);
+
+					// WITH THESE:
+					let mathStart = segment[0];
+					let mathEnd   = segment[1];
+
+					if (isNaN(mathStart) || isNaN(mathEnd)) return;
+
+					// --- THE CLASSIC SWAP ---
+					// If the user entered domain: [10 -10], we fix it here
+					// so pxStart is always <= pxEnd.
+					if (mathStart > mathEnd) {
+						let temp = mathStart;
+						mathStart = mathEnd;
+						mathEnd = temp;
+					}
+
+					// 2. Map to Screen Space once
+					const pxStart = this.toScreenX(mathStart);
+					const pxEnd   = this.toScreenX(mathEnd);
+
+					ctx.beginPath();
+
+					// 3. THE FIRST POINT (Exact Math Start)
+					const yStart = fn.exec(mathStart, this.globals.t, Math, fn.scopeRef);
+					if (yStart !== null && isFinite(yStart)) {
+						ctx.moveTo(pxStart, this.toScreenY(yStart));
+					}
+
+
+					// 4. THE SAMPLING LOOP - Optimized
+					// We start the loop slightly AFTER pxStart to avoid double-drawing the first point
+					// Pull these outside the loop to avoid property lookups
+					const step = 2;
+					const currentT = this.globals.t;
+					const math = Math;
+					const exec = fn.exec;
+					const scope = fn.scopeRef;
+
+
+					// --- THE SINGLE POINT GATE ---
+					const isSinglePoint = (pxStart === pxEnd);
+
+					if (isSinglePoint && fn.marker) {
+						// Just draw it once!
+						const y = exec(mathStart, currentT, math, scope);
+						if (y !== null && isFinite(y)) {
+							const screenY = this.currentOffsetY - (y * this.currentScaleY);
+							this.drawMarkerGlyph(fn.markerType || 'bullet', pxStart, screenY, fn.color, fn.markerSize);
+						}
+					} else {
+						// Existing loop for lines and scatter markers
+						for (let px = pxStart + step; px < pxEnd; px += step) {
+							// Inline the math for toMathX to avoid function call overhead
+							const x = (px - this.currentOffsetX) / this.currentScaleX;
+
+							const y = exec(x, currentT, math, scope);
+							// dev code: const y = 0;
+
+							// --- PATCH n=1: THE FORK ---
+							const screenY = this.currentOffsetY - (y * this.currentScaleY);
+
+							// TEMP MANUFACTURED FLAG FOR TESTING (Remove after Step 7)
+							// fn.marker = true;
+							// fn.markerType = 'bullet';
+
+							if (fn.marker) {
+								ctx.moveTo(px, screenY);
+								this.drawMarkerGlyph(fn.markerType || 'bullet', px, screenY, fn.color, fn.markerSize);
+							} else {
+								if (y !== null && isFinite(y)) {
+									ctx.lineTo(px, this.currentOffsetY - (y * this.currentScaleY));
+								} else {
+									ctx.beginPath();
+								}
+							}
+						}
+						// 5. THE LAST POINT (Exact Math End)
+						if (!fn.marker) {
+							const yEnd = fn.exec(mathEnd, this.globals.t, Math, fn.scopeRef);
+							if (yEnd !== null && isFinite(yEnd)) {
+								ctx.lineTo(pxEnd, this.toScreenY(yEnd));
+							}
+							// ctx.lineCap = "round"; // butt
+							ctx.lineJoin = "round";
+							ctx.stroke();
+						}
+					}
+				});
+			});
+		} // end of drawFunctions()
+
+
+		drawMarkerGlyph(type, x, y, color, size) {
+			const ctx = this.ctx;
+			ctx.save();
+			try {
+				ctx.beginPath();
+				ctx.strokeStyle = color;
+				ctx.fillStyle = color;
+				ctx.lineWidth = Math.max(1, size / 4);
+
+				switch (type) {
+					case 'bullet': // Filled Circle
+						ctx.arc(x, y, size, 0, Math.PI * 2);
+						ctx.fill();
+						break;
+
+					case 'circle': // Outline Circle
+						ctx.arc(x, y, size, 0, Math.PI * 2);
+						ctx.stroke();
+						break;
+
+					case 'plus': // Vertical/Horizontal +
+						ctx.moveTo(x - size, y);
+						ctx.lineTo(x + size, y);
+						ctx.moveTo(x, y - size);
+						ctx.lineTo(x, y + size);
+						ctx.stroke();
+						break;
+
+					case 'cross': // X Shape (Rotated 45 degrees)
+						const offset = size * 0.707; // sin(45) * size
+						ctx.moveTo(x - offset, y - offset);
+						ctx.lineTo(x + offset, y + offset);
+						ctx.moveTo(x + offset, y - offset);
+						ctx.lineTo(x - offset, y + offset);
+						ctx.stroke();
+						break;
+
+					case 'square':
+					case 'rect':
+						ctx.rect(x - size, y - size, size * 2, size * 2);
+						ctx.fill();
+						break;
+				}
+			} finally {
+				ctx.restore();
+			}
+		}
+
+
+		old_wallWarnings() {
+			if (this.globals.quiet === true) return;
+
+			// 1. Collect everything into one list
+			const sysErrors = this.systemErrors || [];
+			const sysWarnings = this.systemWarnings || [];
+			const fnErrors = (this.functions_dev || [])
+								.filter(fn => fn.warning)
+								.map(fn => fn.warning);
+
+			const allErrors = [...sysErrors, ...sysWarnings, ...fnErrors];
+
+			// 2. Single check: if nothing is wrong, get out
+			if (allErrors.length === 0) return;
+
+			const ctx = this.ctx;
+				ctx.save();
+				ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+				// 1. THE GHOST PASS: Calculate required lines
+				const lineHeight = 20;
+				let totalLines = 1; // Start with 1 for the Header
+				const wrappedErrors = [];
+
+				allErrors.forEach(err => {
+					const msg = `> ${err}`;
+					if (msg.length > 45) {
+						wrappedErrors.push(msg.substring(0, 45));
+						wrappedErrors.push("  " + msg.substring(45));
+						totalLines += 2;
+					} else {
+						wrappedErrors.push(msg);
+						totalLines += 1;
+					}
+				});
+
+				// 2. THE BACKGROUND PASS: Draw the box based on the Ghost Pass
+				const boxW = 420;
+				const boxH = 30 + (totalLines * lineHeight); // Dynamic Height!
+
+				ctx.fillStyle = "rgba(20, 0, 0, 0.8)";
+				ctx.strokeStyle = "rgba(255, 50, 50, 0.5)";
+				ctx.fillRect(10, 10, boxW, boxH);
+				ctx.strokeRect(10, 10, boxW, boxH);
+
+				// 3. THE PHYSICAL PASS: Draw the text
+				ctx.font = "bold 14px monospace";
+				ctx.fillStyle = "#ff6666";
+				ctx.fillText("⚠️ SCRIPT ERRORS and WARNINGS:", 20, 32);
+
+				ctx.font = "13px monospace";
+				ctx.fillStyle = "#eeeeee";
+				wrappedErrors.forEach((line, i) => {
+					ctx.fillText(line, 25, 55 + (i * lineHeight));
+				});
+
+				ctx.restore();
+		} // end of old wallWarnings()
+
+
+		// type: 'E' (Error), 'W' (Warning) and fallback 'F' (Function)
+		// persistent: true (keep until next parse), false (clear every frame)
+		addLog(type, text, persistent = false) {
+			this.allLogs.push({ type, text, persistent });
+		}
+
+
+		wallWarnings() {
+			if (this.globals.quiet === true || this.allLogs.length === 0) return;
+
+			const ctx = this.ctx;
+			ctx.save();
+			ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+			const lineHeight = 20;
+			const wrappedLines = [];
+
+			// 1. DYNAMIC GHOST PASS
+			this.allLogs.forEach(log => {
+				const prefix = log.type === 'E' ? "ERR: " : (log.type === 'W' ? "WRN: " : "FNC: ");
+				const msg = prefix + log.text;
+
+				// Simple wrap at 45 chars
+				if (msg.length > 45) {
+					wrappedLines.push({ text: msg.substring(0, 45), type: log.type });
+					wrappedLines.push({ text: "  " + msg.substring(45), type: log.type });
+				} else {
+					wrappedLines.push({ text: msg, type: log.type });
+				}
+			});
+
+			const boxH = 40 + (wrappedLines.length * lineHeight);
+			const boxW = 420;
+
+			// 2. DYNAMIC BACKGROUND
+			// Change color if there's at least one 'E'rror
+			const hasError = this.allLogs.some(l => l.type === 'E');
+			ctx.fillStyle = hasError ? "rgba(40, 0, 0, 0.85)" : "rgba(30, 30, 0, 0.85)";
+			ctx.strokeStyle = hasError ? "#ff3333" : "#ffcc00";
+
+			ctx.fillRect(10, 18, boxW, boxH);
+			ctx.strokeRect(10, 18, boxW, boxH);
+
+			// 3. PHYSICAL PASS
+			ctx.font = "bold 14px monospace";
+			ctx.fillStyle = hasError ? "#ff6666" : "#ffcc00";
+			ctx.fillText(hasError ? "⚠️ CRITICAL ERRORS:" : "ℹ️ SYSTEM WARNINGS:", 20, 32);
+
+			ctx.font = "13px monospace";
+			wrappedLines.forEach((line, i) => {
+				// Set color per line based on its original type
+				if (line.type === 'E') ctx.fillStyle = "#ffaaaa";      // Soft red
+				else if (line.type === 'W') ctx.fillStyle = "#ffeeba"; // Soft yellow
+				else ctx.fillStyle = "#eeeeee";                       // White for others
+
+				ctx.fillText(line.text, 25, 55 + (i * lineHeight));
+			});
+
+			ctx.restore();
+		} // end of wallWarnings
+
+
+		updateTransform() {
+			const { width, height } = this.canvas;
+			const axis = this.globals.axis;
+
+			if (this.globals.mapping === "physical") {
+				this.currentScaleX = this.globals.xu;
+				this.currentScaleY = this.globals.yu;
+			} else if (this.globals.mapping === "non_distorting") {
+				const unitScale = width / (axis.xMax - axis.xMin);
+				this.currentScaleX = unitScale;
+				this.currentScaleY = unitScale;
+			} else {
+				this.currentScaleX = width / (axis.xMax - axis.xMin);
+				this.currentScaleY = height / (axis.yMax - axis.yMin);
+			}
+
+			const mathMidX = (axis.xMax + axis.xMin) / 2;
+			const mathMidY = (axis.yMax + axis.yMin) / 2;
+			this.currentOffsetX = (width / 2) - (mathMidX * this.currentScaleX);
+			this.currentOffsetY = (height / 2) + (mathMidY * this.currentScaleY);
+		} // end of updateTransform()
+
+		applyClipping() {
+			const axis = this.globals.axis;
+			const xMin = this.toScreenX(axis.xMin);
+			const xMax = this.toScreenX(axis.xMax);
+			const yMax = this.toScreenY(axis.yMax);
+			const yMin = this.toScreenY(axis.yMin);
+
+			this.ctx.beginPath();
+			this.ctx.rect(xMin, yMax, xMax - xMin, yMin - yMax);
+			this.ctx.clip();
+		}
+
+
+		prepareCanvas(isDark) {
+			this.ctx.fillStyle = isDark ? "#000" : "#fff";
+			this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+		}
+
+
+		showCanvasWall(message) {
+			console.warn("Canvas Wall Triggered:", message);
+			// Future: Draw a red box with the message on the canvas
+		}
+
+
+	} // end of class Plotter{}
+
+	const corePlotterVarNames = ['x', 't'];
+
+	Plotter.CONFIG = {
+		"name": { type: "string", def: "f + index", desc: "Function label" },
+		"term": { type: "math", def: "0", desc: "Math expression" },
+		"color": { type: "color", def: "#00AA00", desc: "Hex/CSS color" },
+		"thickness": { type: "number", def: "2", desc: "Line width" },
+		"dash": { type: "array", def: "[]", desc: "[dash gap]" },
+		"plot": { type: ["yes","no"], def: "yes", desc: "Visibility" },
+		"domain": { type: "array", def: "auto", desc: "[min max]" },
+		"loopMode": { type: ["cycle", "sweep", "once", "normal"], def: "normal", desc: "Anim style" },
+		"animSpeed": { type: "array", def: "[1 5]", desc: "[min max]" },
+		"tRange": { type: "array", def: "[-3.14 3.14]", desc: "t-range" },
+		"axisXmin": { type: "number", def: "-10", desc: "Left limit" },
+		"axisXmax": { type: "number", def: "10", desc: "Right limit" },
+		"axisYmin": { type: "number", def: "-10", desc: "Bottom limit" },
+		"axisYmax": { type: "number", def: "10", desc: "Top limit" },
+		"gridXstep": { type: "number", def: "1", desc: "X grid spacing" },
+		"gridYstep": { type: "number", def: "1", desc: "Y grid spacing" },
+		"ordXpos": { type: "number", def: "0", desc: "Y-axis X-position" },
+		"absYpos": { type: "number", def: "0", desc: "X-axis Y-position" },
+		"xLabels": { type: "array", def: "auto", desc: "Custom X labels" },
+		"yLabels": { type: "array", def: "auto", desc: "Custom Y labels" },
+		"labelsXstep": { type: "number", def: "1", desc: "Spacing between X labels" },
+		"labelsYstep": { type: "number", def: "1", desc: "Spacing between Y labels" },
+		"titleX":  { type: "string", def: "x", desc: "Label for the X-axis" },
+		"titleY":  { type: "string", def: "y", desc: "Label for the Y-axis" },
+		"mapping": { type: ["fill_canvas", "non_distorting", "physical"], def: "fill_canvas", desc: "Coordinate mapping style" },
+		"marker":  { type: ["yes","no"], def: "no", desc: "Marker" },
+		"markerType": { type: ["bullet","circle","sqare","rect"], def: "bullet", desc: "Marker type" },
+		"markerSize": { type: "number", def: "5", desc: "Size of circle or rectangle" },
+		"at": { type: "number", def: "0", desc: "Marker position" },
+		"xu": { type: "number", def: "37.8", desc: "one unit on x-axis" },
+		"yu": { type: "number", def: "37.8", desc: "one unit on x-axis" },
+		"quiet": { type: ["yes", "no"], def: "no", desc: "be quiet" }
+	};
+
+	const plotterInstance = new Plotter('plotCanvas');
+
+
+	document.getElementById('scriptArea0').addEventListener('input', parseAndPlot);
+	document.getElementById('scriptArea1').addEventListener('input', parseAndPlot);
+
+	document.getElementById('tInput').addEventListener('input', (e) => {
+		const val = parseFloat(e.target.value);
+		if (!isNaN(val)) {
+			plotterInstance.globals.t = val;
+			// This is the manual "nudge" that draws the frame while paused:
+			if (!plotterInstance.isAnimating) {
+				plotterInstance.render();
+			}
+		}
+	});
+
+
+	function openTab(index) {
+		document.querySelectorAll('.tab-btn, .tab-content').forEach(el => el.classList.remove('active'));
+		document.querySelectorAll('.tab-btn')[index].classList.add('active');
+		document.getElementById('tab' + index).classList.add('active');
+		if (index === 2) { updateHelpKeywords(); }
+	}
+
+
+	function parseAndPlot() {
+		// console.log("DEBUG: Current t before parsing:", plotterInstance.globals.t);
+
+		const area0 = document.getElementById('scriptArea0').value;
+		const area1 = document.getElementById('scriptArea1').value;
+		const fullScript = area0 + "\n" + area1;
+
+		if (!isResetting) {
+			localStorage.setItem('plotter_script_tab0', area0);
+			localStorage.setItem('plotter_script_tab1', area1);
+		}
+
+		// HEAVY LIFTING: Logic, naming gatekeeper, and regex
+		plotterInstance.parseScript(fullScript);
+
+		plotterInstance.compiledCache = {};
+
+		const g = plotterInstance.globals;
+		if (g.t < g.tMin || g.t > g.tMax) {
+			// console.warn("DEBUG t was out of range! Resetting to:", g.tMin);
+			g.t = g.tMin;
+		}
+
+		// Update the UI display for 't' so the user sees the correct start value
+		const tInput = document.getElementById('tInput'); // Adjust to your ID
+		// console.log("DEBUG: DOM element found:", tInput);
+
+		if (tInput) {
+			// Use .value for input fields, and force it to be a string
+			tInput.value = g.t.toFixed(4);
+			// console.log("DEBUG: Updated input value to:", tInput.value);
+		}
+
+
+		const speedSlider = document.getElementById('speedSlider'); // Use your actual ID here
+		if (speedSlider && !isNaN(plotterInstance.globals.speed)) {
+			// Sync the slider position to the newly parsed speed
+			speedSlider.value = plotterInstance.globals.speed;
+		}
+
+
+		if (!plotterInstance.isAnimating) { plotterInstance.render(); }
+	} // end of parseAndPlot()
+
+
+
+
+function processIncomingText(content) {
+    const sections = content.split(/% <----- .* ----->/);
+
+    if (sections.length >= 3) {
+        const metadataStr = sections[0].trim();
+        const setupStr = sections[1].trim();
+        const functionsStr = sections[2].trim();
+
+        // --- 1. FILL SCRIPT AREAS ---
+        document.getElementById('scriptArea0').value = setupStr;
+        document.getElementById('scriptArea1').value = functionsStr;
+
+        // --- 2. APPLY UI STATE ---
+        const getMeta = (key) => {
+            const match = metadataStr.match(new RegExp(`${key}:\\s*(.+)`));
+            return match ? match[1].trim() : null;
+        };
+
+        const mode = getMeta('appearanceMode');
+        const speed = getMeta('animationSpeed');
+        const tValue = getMeta('tValue');
+        const animState = getMeta('animationState');
+        const tDirection = getMeta('tDirection');
+
+        // Dark Mode
+        if (mode === 'dark') document.body.classList.add('dark-mode');
+        else document.body.classList.remove('dark-mode');
+
+        // Speed
+        if (speed) {
+            const slider = document.getElementById('speedSlider');
+            if (slider) slider.value = speed;
+            plotterInstance.globals.speed = parseFloat(speed);
+        }
+
+        // Direction
+        plotterInstance.globals.tDir = (tDirection) ? (parseInt(tDirection) || 1) : 1;
+
+        // --- 3. TRIGGER ENGINE ---
+        plotterInstance.scriptHasChanged = true;
+        plotterInstance.compiledCache = {};
+
+        // This is your main calculation call
+        if (typeof parseAndPlot === 'function') parseAndPlot();
+
+        // Time Value
+        plotterInstance.globals.t = tValue ? parseFloat(tValue) : (plotterInstance.globals.tMin || 0);
+        const tInput = document.getElementById('tInput');
+        if (tInput) tInput.value = plotterInstance.globals.t.toFixed(3);
+
+        // Animation State
+        const btn = document.getElementById('toggleAnim');
+        if (animState === 'off') {
+            plotterInstance.isAnimating = false;
+            if (btn) btn.innerText = "◀ ▶";
+            if (plotterInstance.animId) {
+                cancelAnimationFrame(plotterInstance.animId);
+                plotterInstance.animId = null;
+            }
+            plotterInstance.render();
+        } else {
+            plotterInstance.isAnimating = true;
+            if (btn) btn.innerText = "⏸";
+            if (!plotterInstance.animId) plotterInstance.animate();
+        }
+    } else {
+        console.error("File format not recognized.");
+    }
+}
+
+
+async function loadRemoteScene(path) {
+    try {
+        const response = await fetch(path);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+        const content = await response.text();
+
+        // Use the same processor!
+        processIncomingText(content);
+
+        console.log("Remote scene loaded successfully.");
+    } catch (err) {
+        console.error("Failed to load remote scene:", err);
+        alert("Could not load the remote file.");
+    }
+}
+
+
+
+
+
+
+	document.getElementById('toggleAnim').onclick = function() {
+		plotterInstance.isAnimating = !plotterInstance.isAnimating;
+		this.innerText = plotterInstance.isAnimating ? "⏸" : "◀ ▶";
+	};
+
+
+	document.getElementById('resetT').addEventListener('click', () => {
+		// 1. Reset math to the start of the defined range
+		const startTime = plotterInstance.globals.tMin;
+		plotterInstance.globals.t = startTime;
+
+		// 2. Update the UI field to match
+		const tInput = document.getElementById('tInput');
+		if (tInput) {
+			// We use toFixed(3) to keep the UI consistent with your v050 design
+			tInput.value = startTime.toFixed(3);
+		}
+
+		// 3. Set the animation direction back to forward (optional but helpful)
+		plotterInstance.globals.tDir = 1;
+
+		// 4. Force a redraw so the graph matches the new time
+		plotterInstance.render();
+	});
+
+
+	document.getElementById('speedSlider').oninput = (e) => {
+		plotterInstance.globals.speed = parseFloat(e.target.value);
+		// If paused, re-render one frame so the user sees
+		// any changes that speed might affect (if any).
+		// This one line nails the slider at its current point, can't move it with the mouse pointer:
+		// if (!plotterInstance.isAnimating) { plotterInstance.render(); }
+	};
+
+
+	/* obsolete code?
+	document.getElementById('tInput').onchange = function() {
+		const val = parseFloat(this.value);
+		const g = plotterInstance.globals;
+
+		// Logic: If in range, accept it. If not, the render() will overwrite it
+		// with the old t value on the next frame.
+		if (!isNaN(val) && val >= g.tMin && val <= g.tMax) {
+			g.t = val;
+		}
+	};
+	*/
+
+function handle42(sel) {
+	const val = sel.value;
+	if (!val) return;
+
+	if (val === "load") {
+		document.getElementById('fileLoader').click();
+	} else if (val === "save") {
+		plotterInstance.saveSession();
+	} else if (val === "theme-toggle") {
+		toggleDarkMode();
+	} else if (val === "reset-default") {
+		// Call your function that loads the hard-coded starter script
+		loadDefaultBuiltInScene();
+	} else if (val === "ex-1overx") {
+		loadRemoteScene('plotter_scenes/plotter_1_over_x.txt');
+	} else if (val === "ex-wave") {
+		loadRemoteScene('plotter_scenes_waves/plotter_stehende_Welle.txt');
+	}
+
+	// Crucial: Reset the menu back to the "42" label
+	sel.selectedIndex = 0;
+}
+
+
+
+
+	function toggleDarkMode() {
+		const isDark = document.body.classList.toggle('dark-mode');
+		localStorage.setItem('darkMode', isDark);
+		// document.getElementById('darkToggle').innerText = isDark ? '☀️' : '🌙';
+		plotterInstance.render();
+	}
+
+
+	function updateHelpKeywords() {
+		const container = document.getElementById('keyword-list');
+		if (!container) return;
+
+		let listHtml = [];
+
+		// Loop through the Object entries
+		for (const [key, info] of Object.entries(Plotter.CONFIG)) {
+			// Handle array types vs string types for the "Allowed" column
+			const typeInfo = Array.isArray(info.type) ? info.type.join('|') : info.type;
+
+			const entry = `<code>${key}</code> <small>(${typeInfo}) [${info.def}] — ${info.desc}</small>`;
+			listHtml.push(entry);
+		}
+
+		container.innerHTML = '<br><strong>LIST OF KNOWN KEYS</strong><br>' +
+			// We use a div with a 10px bottom margin (adjustable \vskip)
+			'<div style="margin-bottom: 10px;"><strong><small>' +
+			'true and false are synonyms for yes and no.' +
+			'</small></strong></div>' +
+			listHtml.join('<br>');
+
+	}
+
+
+	/* dev code - please keep it
+	for (var i = 0; i < sorted.length; i++) {
+		var k = sorted[i];
+		console.log("Processing keyword index " + i + ":", k); // This is your console check
+	}
+	dev code - please keep it*/
+
+
+	window.addEventListener('keydown', (e) => {
+		// 1. Identify the elements correctly
+		const speedSlider = document.getElementById('speedSlider');
+
+		// 2. Ignore if typing in text fields
+		if (e.target.tagName === 'TEXTAREA' || e.target === tInput) return;
+
+		// 3. Spacebar Toggle
+		if (e.code === 'Space') {
+			e.preventDefault();
+			toggleAnimAction();
+			return;
+		}
+
+		// 4. Arrow Key Speed Control
+		if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+			// Prevent the browser's native slow-motion slider move
+			e.preventDefault();
+
+			// Use the actual range from the DOM element
+			const sMin = parseFloat(speedSlider.min);
+			const sMax = parseFloat(speedSlider.max);
+			const range = sMax - sMin;
+			const jump = range * 0.1; // 10% jump
+
+			let currentVal = parseFloat(speedSlider.value);
+			let newVal;
+
+			if (e.code === 'ArrowRight') {
+				newVal = Math.min(sMax, currentVal + jump);
+			} else {
+				newVal = Math.max(sMin, currentVal - jump);
+			}
+
+			// Apply to both the UI and the Engine
+			speedSlider.value = newVal;
+			plotterInstance.globals.speed = newVal;
+
+			// DEBUG check: Open your browser console (F12) to see this move
+			// console.log("New Speed:", plotterInstance.globals.speed); // DEBUG
+		}
+	});
+
+	function confirmFactoryReset() {
+		const warning = "Warning: This will clear all custom scripts and reset the plotter to factory settings. Proceed?";
+		if (confirm(warning)) {
+			// Replace 'hardReset' with whatever your actual reset function is named
+			if (typeof hardReset === 'function') {
+				hardReset();
+				console.log("Factory reset executed.");
+			} else {
+				// Fallback: if you haven't written the logic yet,
+				// you can simply clear localStorage and reload
+				localStorage.clear();
+				location.reload();
+			}
+		}
+	}
+
+
+	function old_hardReset() {
+		if (confirm("Wipe all changes and return to the built-in HTML examples?")) {
+			isResetting = true;
+			localStorage.clear();
+			sessionStorage.clear();
+
+			// Use the CORRECT IDs from your HTML
+			const area0 = document.getElementById('scriptArea0');
+			const area1 = document.getElementById('scriptArea1');
+
+			// This forces the browser to forget what you typed
+			if(area0) area0.value = area0.defaultValue;
+			if(area1) area1.value = area1.defaultValue;
+
+			window.location.reload();
+		}
+	}
+
+	window.onload = () => {
+		// 1. Dark Mode Logic
+		const savedDark = localStorage.getItem('darkMode');
+		if (savedDark === null || savedDark === 'true') {
+			document.body.classList.add('dark-mode');
+
+			// Check if the old toggle exists before trying to change its icon
+			const darkBtn = document.getElementById('darkToggle');
+			if (darkBtn) {
+				darkBtn.innerText = '☀️';
+			}
+		}
+
+		// 2. LOAD SCRIPT FROM STORAGE (The Missing Link)
+		// Only overwrite the HTML text if there is something saved in storage
+		const saved0 = localStorage.getItem('plotter_script_tab0');
+		const saved1 = localStorage.getItem('plotter_script_tab1');
+
+		if (saved0 !== null) document.getElementById('scriptArea0').value = saved0;
+		if (saved1 !== null) document.getElementById('scriptArea1').value = saved1;
+
+		// 3. Update Help & Start
+		updateHelpKeywords();
+		// POST MORTEM RECOVERY:
+		// Make the following line a comment to avoid the browser reads
+		// a poissoned script again and again and dies. So you have a
+		// chance to edit your poissoned script or reset the plotter:
+		parseAndPlot();
+
+		// "FORCE INITIAL BUTTON STATE
+		// maybe obsolete if/because default button text is "⏸"
+		const animBtn = document.getElementById('toggleAnim');
+		if (animBtn) {
+			animBtn.innerText = plotterInstance.isAnimating ? "⏸" : "◀ ▶";
+		}
+	};
+
+
+	document.getElementById('toggleDir').onclick = function() {
+		plotterInstance.globals.tDir *= -1;
+		// Update the button text visually
+		this.innerText = plotterInstance.globals.tDir === 1 ? "▶" : "◀";
+		// Forward Reverse
+	};
+
+
+	function toggleAnimAction() {
+		if (plotterInstance.isAnimating) {
+			plotterInstance.stop(); // Use the class method to cancel the frame
+		} else {
+			// Reset 'once' mode if at the end
+			if (plotterInstance.globals.loopMode === 'once' &&
+				plotterInstance.globals.t >= plotterInstance.globals.tMax) {
+				plotterInstance.globals.t = plotterInstance.globals.tMin;
+			}
+			plotterInstance.start(); // Use the class method to begin requestAnimationFrame
+		}
+
+		document.getElementById('toggleAnim').innerText =
+			plotterInstance.isAnimating ? "⏸" : "◀ ▶";
+	}
+
+	// Update the button click to use the same function
+	document.getElementById('toggleAnim').onclick = toggleAnimAction;
+
+
+	// Ensure this is at the BOTTOM of your script (Global Scope)
+	function hardReset() {
+		console.log("Button clicked, attempting to confirm...");
+
+		const choice = window.confirm("Wipe all changes and return to the built-in HTML examples?");
+
+		if (choice) {
+			console.log("User confirmed. Clearing storage...");
+			isResetting = true;
+			localStorage.clear();
+			sessionStorage.clear();
+
+			const area0 = document.getElementById('scriptArea0');
+			const area1 = document.getElementById('scriptArea1');
+
+			if(area0) area0.value = "";
+			if(area1) area1.value = "";
+
+			console.log("Reloading...");
+			window.location.href = window.location.pathname + "?reset=" + Date.now();
+		} else {
+			console.log("User cancelled reset.");
+		}
+	}
+
+	const resizer = document.getElementById('dragMe');
+	const sidebar = document.querySelector('.sidebar');
+
+	resizer.addEventListener('mousedown', initDrag);
+	resizer.addEventListener('touchstart', initDrag, {passive: false});
+
+	function initDrag(e) {
+		e.preventDefault();
+		document.addEventListener('mousemove', doDrag);
+		document.addEventListener('mouseup', stopDrag);
+		document.addEventListener('touchmove', doDrag, {passive: false});
+		document.addEventListener('touchend', stopDrag);
+	}
+
+
+	initSceneMenu();
+
+	function doDrag(e) {
+		// 1. Get the correct X coordinate (Mouse or Touch)
+		const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
+
+		// 2. Only proceed if we have a valid coordinate
+		if (clientX > 100 && clientX < window.innerWidth - 100) {
+			// Update the sidebar width
+			sidebar.style.width = clientX + 'px';
+
+			// 3. Update the Canvas (Wrapped in a try/catch or safety check)
+			const canvas = document.getElementById('plotCanvas');
+			if (canvas && canvas.parentElement) {
+				const container = canvas.parentElement;
+
+				// Sync resolution
+				canvas.width = container.clientWidth;
+				canvas.height = container.clientHeight;
+
+				// 4. If your library has a specific 'resize' handler, call it!
+				if (typeof plotterInstance.resize === "function") {
+					plotterInstance.resize();
+				}
+			}
+		}
+	}
+
+	function stopDrag() {
+		document.removeEventListener('mousemove', doDrag);
+		document.removeEventListener('mouseup', stopDrag);
+		document.removeEventListener('touchmove', doDrag);
+		document.removeEventListener('touchend', stopDrag);
+	}
+
+
+	// This tells the iPad: "When I touch a menu item, treat it like a hover"
+	document.querySelectorAll('.has-submenu').forEach(item => {
+		item.addEventListener('touchstart', function(){}, {passive: true});
+	});
+
+</script>
+</body>
+</html>

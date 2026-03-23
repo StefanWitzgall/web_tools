@@ -1,0 +1,69 @@
+fileName: plotter_20260225_033958.txt
+creDateTime: 25.02.2026 03:39:58
+scriptVersion: 0.70
+appearanceMode: dark
+animationSpeed: 0.129
+animationState: off
+% <----- END of METADATA BEGIN of SETUP ----->
+\bpre
+mapping: physical
+% mapping: non_distorting
+% mapping: fill_canvas
+
+\def{pi}{Math.PI}
+\def{sin}{Math.sin}
+\def{cos}{Math.cos}
+\def{abs}{Math.abs}
+\def{exp}{Math.exp}
+\def{sqrt}{Math.sqrt}
+
+animSpeed: [0 .5]
+tRange: [0 2000]
+loopMode: sweep
+% sweep once normal cycle
+
+axisXmin: -3*pi
+axisXmax: 3*pi
+axisYmin: -2.5
+axisYmax: 3
+gridXstep: 1
+gridYstep: 1
+labelsXstep: 1
+labelsYstep: 1
+ordXpos: 0
+absYpos: 0
+xu: 50
+yu: 50
+titleX: x
+titleY: y
+
+\epre
+
+% <----- END of SETUP BEGIN of FUNCTIONS ----->
+\bfun name: f1
+term: sin(2*pi*(t/1-x/3))
+thickness: 3
+plot: yes
+color: #00FF00
+domain: 0 10
+\efun
+
+\bfun name: f2
+term: sin(2*pi*(t/1+x/3))
+thickness: 3
+plot: yes
+color: #2222FF
+domain: -10 0
+\efun
+
+\bfun
+term: f1 + f2
+marker: yes
+at: 0
+color: yellow
+markerType: bullet
+markerSize: 10
+plot: true
+\efun
+
+

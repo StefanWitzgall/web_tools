@@ -1,0 +1,65 @@
+fileName: plotter_20260307_152622.txt
+creDateTime: 07.03.2026 15:26:22
+scriptVersion: 0.82
+appearanceMode: dark
+animationSpeed: 1.5
+animationState: off
+tValue: 1.5
+tDirection: 1
+% <----- END of METADATA BEGIN of SETUP ----->
+\bpre
+% mapping: physical
+% mapping: non_distorting
+mapping: fill_canvas
+
+\def{pi}{Math.PI}
+\def{sin}{Math.sin}
+\def{cos}{Math.cos}
+\def{abs}{Math.abs}
+\def{sign}{Math.sign}
+\def{exp}{Math.exp}
+\def{sqrt}{Math.sqrt}
+
+\def{c}{3} % center
+\def{w}{2} % width
+\def{a}{2}
+\def{b}{0.5}
+\def{offset}{1}
+
+animSpeed: [0 3]
+tRange: [1.5 3.5]
+loopMode: cycle 
+% sweep once normal cycle
+
+axisXmin: -5
+axisXmax: 12
+axisYmin: -2
+axisYmax: 8
+gridXstep: 1
+gridYstep: 1
+labelsXstep: 1
+labelsYstep: 1
+ordXpos: 0
+absYpos: 0
+xu: 50
+yu: 50
+titleX: x\;
+titleY: ordinate\;y
+
+\epre
+% <----- END of SETUP BEGIN of FUNCTIONS ----->
+\bfun 
+name: f; 
+term: a * sin(x) + offset; 
+color: blue; 
+\efun
+
+\bfun name: f'; term: a * cos(x); color: green; \efun
+
+\bfun
+name: f''; 
+term: (() => { let modifier = 0.5\; return f' * modifier\; })() + (f / 2);
+color: red; 
+thickness: 5;
+domain: [offset-2 offset+5];
+\efun

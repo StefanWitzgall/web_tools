@@ -1,0 +1,59 @@
+fileName: plotter_20260223_033248.txt
+creDateTime: 23.02.2026 03:32:48
+scriptVersion: 0.70
+appearanceMode: dark
+animationSpeed: 1.5
+animationState: off
+% <----- END of METADATA BEGIN of SETUP ----->
+\bpre
+mapping: physical
+% mapping: non_distorting
+% mapping: fill_canvas
+
+\def{pi}{Math.PI}
+\def{sin}{Math.sin}
+\def{cos}{Math.cos}
+\def{abs}{Math.abs}
+\def{exp}{Math.exp}
+\def{sqrt}{Math.sqrt}
+
+animSpeed: [0 5]
+tRange: [1 2*pi]
+loopMode: normal
+% sweep once normal cycle
+
+axisXmin: -0.7
+axisXmax: 15
+axisYmin: -0.7
+axisYmax: 9
+gridXstep: 1
+gridYstep: 1
+labelsXstep: 1
+labelsYstep: 1
+ordXpos: 0
+absYpos: 0
+xu: 60
+yu: 60
+titleX: x
+titleY: y
+
+\epre
+			
+% <----- END of SETUP BEGIN of FUNCTIONS ----->
+\bfun
+name: r; term: 5; plot: no
+\efun
+
+\bfun name: a % helper, draw later
+term: x^1 % try x^2 and x^3 ...
+plot: no
+\efun
+
+\bfun
+name: f1
+term: 1/x
+thickness: 3
+color: #888888
+% dash: [8 4]
+domain: [.1 ]
+\efun

@@ -1,0 +1,82 @@
+fileName: plotter_20260306_021316.txt
+creDateTime: 06.03.2026 02:13:16
+scriptVersion: 0.70
+appearanceMode: dark
+animationSpeed: 0.657
+animationState: on
+% <----- END of METADATA BEGIN of SETUP ----->
+\bpre
+% mapping: physical
+% mapping: non_distorting
+mapping: fill_canvas
+
+\def{pi}{Math.PI}
+\def{sin}{Math.sin}
+\def{cos}{Math.cos}
+\def{abs}{Math.abs}
+\def{sign}{Math.sign}
+\def{exp}{Math.exp}
+\def{sqrt}{Math.sqrt}
+
+\def{center}{2.5}
+\def{width}{1}
+
+animSpeed: [0 3]
+tRange: [1.5 3.5]
+loopMode: sweep
+% sweep once normal cycle
+
+axisXmin: -5
+axisXmax: 12
+axisYmin: -2
+axisYmax: 8
+gridXstep: 1
+gridYstep: 1
+labelsXstep: 1
+labelsYstep: 1
+ordXpos: 0
+absYpos: 0
+xu: 50
+yu: 50
+titleX: x
+titleY: y
+
+\epre
+% <----- END of SETUP BEGIN of FUNCTIONS ----->
+\bfun
+name: fgelb_2
+term: (sign(abs(t-center)-width/2) === -1 ? 0 : 1)*3
+% term: (sign(abs(t-2.5)-1/2) === -1 ? 0 : 1)*3
+color: yellow;
+% domain: center-width/2 center+width/2
+domain: 2 3
+thickness: 60
+\efun
+
+\bfun
+name: show_t
+term: 5
+domain: 0 t
+thickness:20; color: #FF00FF
+\efun
+
+\bfun
+name: frot_2
+term: (sign(abs(x-.5)-.5) === -1 ? 0 : 1);
+color: red;
+thickness: 20
+\efun
+
+\bfun
+name: fgelb_22
+term: (sign(abs(x-2.5)-1/2) === -1 ? 0 : 1)*3;
+color: #FF9900; dash: 80 20
+thickness: 10
+\efun
+
+\bfun
+name: fgruen_2
+term: (sign(abs(x-6.5)-1.5) === 1 ? 0 : 1)*2;
+color: #00FF11;
+thickness: 5
+\efun

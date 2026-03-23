@@ -1,0 +1,103 @@
+fileName: plotter_20260305_203723.txt
+creDateTime: 05.03.2026 20:37:23
+scriptVersion: 0.82
+appearanceMode: dark
+animationSpeed: 1.5
+animationState: off
+tValue: 0
+tDirection: 1
+% <----- END of METADATA BEGIN of SETUP ----->
+\bpre
+% mapping: physical
+% mapping: non_distorting
+mapping: fill_canvas
+
+\def{pi}{Math.PI}\def{e}{Math.E}
+\def{e}{4} % override previous \def
+\def{sin}{Math.sin}
+\def{cos}{Math.cos}
+\def{abs}{Math.abs}
+\def{sign}{Math.sign}
+\def{exp}{Math.exp}
+\def{sqrt}{Math.sqrt}
+\def{user_def}{3}
+\def{T_}{4}
+\def{tt}{1.5}
+\def{thickne_ss}{22}
+\def{tRange_}{.5}
+\def{xu_}{.5}
+  \def{pi}{Math.PI}
+  \def{a}{2}
+  \def{T_osc}{3.14}
+\def{A}{1.7}
+\def{a}{.0004}
+
+quiet: no
+
+animSpeed: [0 3]
+tRange: [-1 4]
+loopMode: sweep
+% sweep once normal cycle
+
+axisXmin: -5
+axisXmax: 12
+axisYmin: -2
+axisYmax: 8
+gridXstep: 1
+gridYstep: 1
+labelsXstep: 1
+labelsYstep: 1
+ordXpos: 0
+absYpos: 0
+xu: 50
+yu: 50
+titleX: x
+titleY: y
+
+\epre
+% <----- END of SETUP BEGIN of FUNCTIONS ----->
+\bfun
+name: xu__
+term: 2
+\efun
+\bfun
+
+\bfun
+  term: A * sin(x/a) + T_osc
+\efun
+
+name: user_de
+term: 2 + e
+thickness: 9
+color: #fff
+\efun
+
+\bfun
+name: fgelb_2
+term: (sign(abs(t-1.5)-1.5) === -1 ? 0 : 1)*3;
+color: yellow;
+domain: 0 3
+thickness: 40
+\efun
+
+\bfun
+name: frot_2
+term: (sign(abs(x-.5)-.5) === -1 ? 0 : 1);
+color: red;
+thickness: 20
+\efun
+
+\bfun
+name: fgelb_22
+term: (sign(abs(x-1.5)-1.5) === -1 ? 0 : 1)*3;
+color: #FF9900; dash: 12 8
+thickness: 10
+\efun
+
+
+\bfun
+name: fgruen_2
+term: (sign(abs(x-6.5)-1.5) === 1 ? 0 : 1)*2;
+color: #00FF11;
+thickness: 5
+\efun

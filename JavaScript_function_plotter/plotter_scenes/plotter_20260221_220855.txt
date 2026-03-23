@@ -1,0 +1,97 @@
+fileName: plotter_20260221_220855.txt
+creDateTime: 21.02.2026 22:08:55
+scriptVersion: 0.70
+appearanceMode: dark
+animationSpeed: 0
+animationState: on
+% <----- END of METADATA BEGIN of SETUP ----->
+\bpre
+ mapping: physical
+% mapping: non_distorting
+%mapping: fill_canvas
+
+loopMode: sweep
+
+\def{pi}{Math.PI}
+\def{sin}{Math.sin}
+\def{cos}{Math.cos}
+\def{abs}{Math.abs}
+\def{exp}{Math.exp}
+\def{sqrt}{Math.sqrt}
+
+
+animationSpeed: 1 + sin(t)
+axisXmin: -5 - abs(sin(t)*5)
+axisXmax: 5 + abs(sin(t)*5)
+
+axisXmin: -5
+axisxMax: 5
+axisYMin: -5
+axisYMax: 5
+
+
+xu: 40 + 20*cos(t)
+yu: 50
+\epre
+			
+% <----- END of SETUP BEGIN of FUNCTIONS ----->
+\bfun
+name: r; term: 5; plot: no
+\efun
+
+\bfun name: halfcircle_up
+term: sqrt(Math.max(0, r*r - x^2))
+color: yellow; domain: [-5 5]; thickness: 20
+\efun
+
+\bfun name: halfcircle_down
+term: -1 * halfcircle_up
+domain: [-5 5]; thickness: 10
+color: #AA00AA
+\efun
+
+\bfun name: a % helper, draw later
+term: x^1 % try x^2 and x^3 ...
+plot: no
+\efun
+
+\bfun
+name: envelope
+term: exp(-abs(x)/4)
+thickness: 3
+color: #888888
+dash: [8 4]
+% domain: [-20 7]
+\efun
+
+\bfun
+name: signal
+term: envelope(x) * sin(2*x + t)
+thickness: 3
+plot: yes
+color: #00AA00
+\efun
+
+\bfun
+name: echo
+term: -1*signal(x-.3) + 7
+thickness: 2
+color: #FF00FF
+\efun
+
+\bfun name: b
+term: 4*signal(a*a)+2
+color: white
+thickness: 2; plot: true
+\efun
+
+\bfun name: c; term: -1*b
+color: orange; thickness: 1.5
+dash: [6 2]; domain: [-3 8]
+\efun
+
+\bfun % now plot a
+name: a_with_a_fancy-name;
+term: a; color: red; thickness: 10
+domain: [-1 1.5] \efun
+												
