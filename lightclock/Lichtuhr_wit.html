@@ -278,7 +278,7 @@
 </head>
 <body>
 	<div class="footer-bar">
-		<div id="versionInfo">WIT v011 11.04.2026, 09:10 CEST</div>
+		<div id="versionInfo">WIT v020 12.04.2026, 09:30 CEST</div>
 		<div><strong>Lichtuhr & Zeitdilatation</strong></div>
 		<div class="hint">[Spacebar] Pause | [Restart] Start Left| [Reset] Default configuration</div>
 	</div>
@@ -399,11 +399,49 @@
 	const initBounce = (cfg.clockHeight / 2) - (cfg.mirrorLineThickness / 2) - cfg.pulseRadius;
 
 	// Puls-Daten dynamisch initialisieren
-	let pulseStatic = { y: initBounce, dir: -1, path: [] };
-	let pulseMoving = { x: 150, y: initBounce, dir: -1, path: [] };
+	let pulseStatic = { y: initBounce, dir: -1, path: [], totalDist: 0 };
+	let pulseMoving = { x: 150, y: initBounce, dir: -1, path: [], totalDist: 0 };
 
 
 	// --- FUNCTIONS ---
+
+	function drawStickFigure(ctx, x, y, label, color) {
+		const scale = 0.8; // Adjust size
+		ctx.save();
+		ctx.strokeStyle = color;
+		ctx.fillStyle = color;
+		ctx.lineWidth = 2;
+		ctx.lineCap = "round";
+
+		// Head
+		ctx.beginPath();
+		ctx.arc(x, y - 25 * scale, 5 * scale, 0, Math.PI * 2);
+		ctx.stroke();
+
+		// Body
+		ctx.beginPath();
+		ctx.moveTo(x, y - 20 * scale);
+		ctx.lineTo(x, y - 10 * scale);
+
+		// Arms
+		ctx.moveTo(x - 8 * scale, y - 15 * scale);
+		ctx.lineTo(x + 8 * scale, y - 15 * scale);
+
+		// Legs
+		ctx.moveTo(x, y - 10 * scale);
+		ctx.lineTo(x - 5 * scale, y);
+		ctx.moveTo(x, y - 10 * scale);
+		ctx.lineTo(x + 5 * scale, y);
+		ctx.stroke();
+
+		// Label (Alice or Bob)
+		ctx.font = "bold 10px sans-serif";
+		ctx.textAlign = "center";
+		ctx.fillText(label, x, y + 12 + cfg.mirrorLineThickness);
+
+		ctx.restore();
+	} // function drawStickFigure()
+
 
 	// Helper: Write parameters into textarea
 	function updateTextarea() {
@@ -413,7 +451,7 @@
 		configArea.value = Object.entries(cfg)
 			.map(([key, val]) => `${key}=${val}`)
 			.join('\n');
-	}
+	} // function updateTextarea()
 
 
 	function initCanvas() {
@@ -431,7 +469,7 @@
 		// Set display size
 		canvas.style.width = displayWidth + 'px';
 		canvas.style.height = displayHeight + 'px';
-	}
+	} // function initCanvas()
 
 
 	function playTone(freq) {
@@ -446,7 +484,7 @@
 		gain.connect(audioCtx.destination);
 		osc.start();
 		osc.stop(audioCtx.currentTime + 0.1);
-	}
+	} // function playTone(freq)
 
 
 	function restartSimulation() {
@@ -460,7 +498,7 @@
 		pulseMoving.y = bounceLimit;
 		pulseMoving.dir = -1;
 		pulseMoving.path = [];
-	}
+	} // function restartSimulation()
 
 
 	// Also take care about the UI elements.
@@ -499,7 +537,39 @@
 		configToggleBtn.classList.remove('active'); // Ensure button is no longer green
 
 		restartSimulation(); // Restart animation
-	}
+	} // function resetCfg()
+
+
+	function resetTimes() {
+		const bounceLimit = (cfg.clockHeight / 2) - (cfg.mirrorLineThickness / 2) - cfg.pulseRadius;
+
+		// 1. Reset Measurements
+		pulseStatic.totalDist = 0;
+		pulseMoving.totalDist = 0;
+		pulseStatic.path = [];
+		pulseMoving.path = [];
+
+		// 2. Snap to Bottom Mirror
+		pulseStatic.y = bounceLimit;
+		pulseStatic.dir = -1; // Move UP next
+
+		pulseMoving.y = bounceLimit;
+		pulseMoving.dir = -1; // Move UP next
+
+		// 3. Reset horizontal position to start of track
+		pulseMoving.x = cfg.mirrorWidth / 2 + lrMirrorBBoxDist;
+
+		// Force Pause
+		isPaused = true;
+
+		// Update the Button UI
+		const btn = document.getElementById('playPauseBtn');
+		if (btn) {
+			btn.innerText = "▶"; // Show play icon because we are now paused
+			btn.style.background = "#bbbb22";
+			btn.style.color = isPaused ? "black" : "white";
+		}
+	} // function resetTimes()
 
 
 	function drawClock(x, y, pulseY, label) {
@@ -603,6 +673,7 @@
 
 		// --- Statische Uhr ---
 		pulseStatic.y += pulseStatic.dir * c;
+		pulseStatic.totalDist += c; // TRACK DISTANCE HERE
 
 		// Track the static pulse
 		if (showTrace) {
@@ -627,6 +698,7 @@
 		const vy = c * Math.sqrt(1 - v * v);
 		pulseMoving.x += vx;
 		pulseMoving.y += pulseMoving.dir * vy;
+		pulseMoving.totalDist += vy; // TRACK DISTANCE HERE
 
 		if (showTrace) {
 			// NUR x und y speichern (relativ zur Mitte der Uhr)
@@ -728,9 +800,34 @@
 			ctx.setLineDash([]);
 		}
 
-		drawClock(pulseMoving.x, cfg.movingClockY, pulseMoving.y, `BEWEGT (v=${v.toFixed(2)}c)`);
-		drawClock(cfg.mirrorWidth / 2 + lrMirrorBBoxDist + cfg.restingClockX, cfg.restingClockY, pulseStatic.y, "RUHEND (Beobachter)");
+		// drawClock(pulseMoving.x, cfg.movingClockY, pulseMoving.y, `BEWEGT (v=${v.toFixed(2)}c)`);
+		drawClock(pulseMoving.x, cfg.movingClockY, pulseMoving.y, "");
+		// drawClock(cfg.mirrorWidth / 2 + lrMirrorBBoxDist + cfg.restingClockX, cfg.restingClockY, pulseStatic.y, "RUHEND (Beobachter)");
+		drawClock(cfg.mirrorWidth / 2 + lrMirrorBBoxDist + cfg.restingClockX, cfg.restingClockY, pulseStatic.y, "");
 
+		// Alice: Stationary near her clock and standing on bottom mirror
+		const aliceX = cfg.mirrorWidth / 2 + lrMirrorBBoxDist + cfg.restingClockX - 40;
+		const aliceY = (cfg.restingClockY + (cfg.clockHeight / 2)) - (cfg.mirrorLineThickness / 2) - 1;
+		drawStickFigure(ctx, aliceX, aliceY, "Alice", "#00ff00");
+
+		// Bob: Moves with the moving clock
+		const bobX = pulseMoving.x - 40; // Offset so he's not inside the pulse
+		const bobY = (cfg.movingClockY + (cfg.clockHeight / 2)) - (cfg.mirrorLineThickness / 2) - 1;
+		drawStickFigure(ctx, bobX, bobY, "Bob", "#ffff00");
+
+		// Draw the clocks for Alice and Bob:
+		ctx.font = "14px monospace";
+		ctx.fillStyle = "#ffffff";
+
+		// Alice's Watch
+		const aliceTime = getDisplayTime(pulseStatic.totalDist);
+		// ctx.fillText(`t = ${aliceTime.toFixed(2)}`, aliceX + 50, aliceY - 10);
+		ctx.fillText(`${aliceTime.toFixed(2)}`, aliceX + 70, aliceY - 10);
+
+		// Bob's Watch
+		const bobTime = getDisplayTime(pulseMoving.totalDist);
+		// ctx.fillText(`t' = ${bobTime.toFixed(2)}`, bobX + 50, bobY - 10);
+		ctx.fillText(`${bobTime.toFixed(2)}`, bobX + 70, bobY - 10);
 		ctx.restore();
 
 		// Pass the timeStep to update
@@ -739,6 +836,16 @@
 		requestAnimationFrame(draw);
 	} // function draw()
 
+
+	function getDisplayTime(dist) {
+		const bounceDist = (cfg.clockHeight / 2) - (cfg.mirrorLineThickness / 2) - cfg.pulseRadius;
+		const fullRange = bounceDist * 2;
+
+		// If "Both" mode is active, the 'unit' is just the distance between mirrors
+		const unitDist = (audioMode === 3) ? fullRange : (fullRange * 2);
+
+		return dist / unitDist;
+	} // function getDisplayTime()
 
 	/*
 	To check if a string is a valid CSS color (hex, rgb, rgba, or named),
@@ -749,7 +856,7 @@
 		const s = new Option().style;
 		s.color = str;
 		return s.color !== '';
-	}
+	} // function isValidColor()
 
 
 	// -------------------------- Interaction ----------------------- //
@@ -781,13 +888,16 @@
 		v = parseFloat(e.target.value);
 		vInput.value = v;
 		pulseMoving.path = [];
+		resetTimes();
 	});
 
 	// FORCE the value to stick when the mouse is released
 	vSlider.addEventListener('change', (e) => {
 		v = parseFloat(e.target.value);
 		vSlider.value = v; // Re-assert the value to the DOM element
+		resetTimes();
 	});
+
 
 	vInput.addEventListener('input', (e) => {
 		let val = parseFloat(e.target.value);
@@ -815,8 +925,17 @@
 	});
 	*/
 
-	restartBtn.addEventListener('click', restartSimulation);
-	resetBtn.addEventListener('click', resetCfg);
+	// If only one action is needed: restartBtn.addEventListener('click', restartSimulation);
+	restartBtn.addEventListener('click', () => {
+		restartSimulation();
+		resetTimes();
+	});
+
+	// resetBtn.addEventListener('click', resetCfg);
+	resetBtn.addEventListener('click', () => {
+		resetCfg();
+		resetTimes();
+	});
 
 	audioBtn.addEventListener('click', () => {
 		if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -845,6 +964,7 @@
 	audioModeBtn.addEventListener('click', () => {
 		// Toggle 1 -> 2 -> 3 -> 1
 		audioMode = (audioMode % 3) + 1;
+		resetTimes();
 
 		const labels = {
 			1: "Tick: BOT",
@@ -898,7 +1018,7 @@
 
 		headerElement.addEventListener('mousedown', start);
 		headerElement.addEventListener('touchstart', start, { passive: false });
-	}
+	} // function makeDraggable()
 
 
 	// Bind both panels using the same function!
@@ -923,7 +1043,7 @@
 
 		activeDragPanel.style.left = newX + 'px';
 		activeDragPanel.style.top = newY + 'px';
-	}
+	} // function handleMove()
 
 	// Single global handler for tracking the movement
 	document.addEventListener('mousemove', (e) => {
@@ -967,7 +1087,7 @@
 			panel.style.display = 'none';
 			btn.classList.remove('active');
 		}
-	}
+	} // function togglePanel()
 
 	configToggleBtn.addEventListener('click', () => {
 		togglePanel(configToggleBtn, configPanel, updateTextarea);
