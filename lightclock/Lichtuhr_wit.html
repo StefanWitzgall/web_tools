@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="de">
+<!-- Stefan Witzgall, Germany, JPG Hof 2026 -->
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -278,7 +279,7 @@
 </head>
 <body>
 	<div class="footer-bar">
-		<div id="versionInfo">WIT v020 12.04.2026, 09:30 CEST</div>
+		<div id="versionInfo">WIT v020 16.04.2026, 09:57 CEST</div>
 		<div><strong>Lichtuhr & Zeitdilatation</strong></div>
 		<div class="hint">[Spacebar] Pause | [Restart] Start Left| [Reset] Default configuration</div>
 	</div>
@@ -320,18 +321,22 @@
 			<p><strong>Lichtuhr & Zeitdilatation</strong></p>
 			<p>Diese Simulation zeigt das Prinzip der Zeitdilatation in der Speziellen Relativitätstheorie.</p>
 			<ul>
-				<li><strong>v:</strong> Bestimmt die Geschwindigkeit der bewegten Uhr als Bruchteil der Lichtgeschwindigkeit (c).</li>
+				<li><strong>v:</strong> Geschwindigkeit der bewegten Uhr als Bruchteil der Lichtgeschwindigkeit (c).</li>
 				<li><strong>Spacebar:</strong> Pausiert oder startet die Animation.</li>
 				<li><strong>Slow Motion:</strong> Verlangsamt die zeitliche Abfolge der Pulse zur besseren Beobachtung.</li>
 				<li><strong>Trace On:</strong> Zeichnet die Spur des Lichtpulses in der bewegten Uhr auf.</li>
 				<li><strong>Esc:</strong> Schließt Hilfe- und Setup-Fenster.</li>
 			</ul>
-			<p style="font-size: 0.9em; color: #aaa;">In den <em>Settings</em> können Sie u. a. Spiegelbreiten, Radien und Audiofrequenzen anpassen.</p>
+			<p style="font-size: 0.9em; color: #fff;">In den <em>Settings</em> können Sie u. a. Spiegelbreiten, Radien und Audiofrequenzen anpassen.</p>
+			<p style="font-size: 0.9em; color: #fff;">Zeiten <em>gedimmt</em> dargestellt: Gemischte Einheiten oder Tick-Modes</p>
 		</div>
 	</div>
 
 <script>
+	// So 12 Apr 2026 10:08 stefan ~/Witzgall/programming/web_tools/lightclock>
+	// grep -nEi 'function\W|const\W|let\W|addEventListener\W|head|body|script' Lichtuhr_wit_v020.html
 	const defaultCfg = {
+		isNightMode: true, // Default to dark
 		virtualWidth: 1200,
 		virtualHeight: 800,
 		frequ1: 3000,
@@ -346,10 +351,15 @@
 		mirrorLineThickness: 3,
 		mirrorWidth: 100,
 		mirrorColor: "#FFFFFF", // any valid color
-		animSpeed: 4,
-		sloMoFactor: .20, // negative values allowed :-)
+		animSpeed: 4, // negative values allowed
+		sloMoFactor: .20, // negative values allowed
 		traceColor: "rgba(200, 200, 255, 0.5)",
-		traceLineThickness: 2
+		traceLineThickness: 2,
+		aliceColor: "#00ff00",
+		aliceTimeColor: "#ffffff",
+		bobColor: "#ffff00",
+        bobTimeColor: "#ffffff",
+		canvasBackgroundColor: "#000000"
 	};
 
 	// --- Create a completely independent copy of the object ---
@@ -381,6 +391,7 @@
 	let audioEnabled = false;
 	let showTrace = true;
 	let isPaused = false;
+	let timeDirty = false;
 	let isSlowMo = false;
 	let audioMode = 1; // 1 = Tick unten, 2 = Tick oben, 3 = beides
 	let configErrorAry = [];
@@ -549,12 +560,22 @@
 		pulseStatic.path = [];
 		pulseMoving.path = [];
 
-		// 2. Snap to Bottom Mirror
-		pulseStatic.y = bounceLimit;
-		pulseStatic.dir = -1; // Move UP next
-
-		pulseMoving.y = bounceLimit;
-		pulseMoving.dir = -1; // Move UP next
+		// 2. Snap to Top or Bottom Mirror
+		if (audioMode === 2) {
+			// --- MODE: TOP ---
+			// Start at top mirror, move DOWN next
+			pulseStatic.y = -bounceLimit;
+			pulseMoving.y = -bounceLimit;
+			pulseStatic.dir = 1;
+			pulseMoving.dir = 1;
+		} else {
+			// --- MODE: BOT or BOTH ---
+			// Start at bottom mirror, move UP next
+			pulseStatic.y = bounceLimit;
+			pulseMoving.y = bounceLimit;
+			pulseStatic.dir = -1;
+			pulseMoving.dir = -1;
+		}
 
 		// 3. Reset horizontal position to start of track
 		pulseMoving.x = cfg.mirrorWidth / 2 + lrMirrorBBoxDist;
@@ -750,7 +771,12 @@
 		// Standard scaling (No manual subtractions needed!)
 		const scale = Math.min(displayW / cfg.virtualWidth, displayH / cfg.virtualHeight);
 
-		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		// Obsolete:
+		// ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+		// Fill canvas with config background color
+		ctx.fillStyle = cfg.canvasBackgroundColor;
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 		ctx.save();
 		// Map CSS pixels to Physical pixels (Retina fix)
@@ -760,10 +786,14 @@
 		ctx.translate((displayW - cfg.virtualWidth * scale) / 2, (displayH - cfg.virtualHeight * scale) / 2);
 		ctx.scale(scale, scale);
 
-		// Bounding box: 0 to virtualWidth, virtualHeight
-		ctx.strokeStyle = "white";
+		// Fill virtual canvas with config background color
+		ctx.fillStyle = cfg.canvasBackgroundColor;
+		ctx.fillRect(0, 0, cfg.virtualWidth, cfg.virtualHeight);
+
+		// Frame bounding box: 0 to virtualWidth, virtualHeight
+		ctx.strokeStyle = cfg.mirrorColor;
 		ctx.lineWidth = 1 / scale;
-		ctx.strokeRect(0, 0, cfg.virtualWidth - 1, cfg.virtualHeight - 2);
+		ctx.strokeRect(0, 1, cfg.virtualWidth - 1, cfg.virtualHeight - 3);
 
 		// Draw Moving Clock Trace
 		if (showTrace && pulseMoving.path.length > 1) {
@@ -808,25 +838,26 @@
 		// Alice: Stationary near her clock and standing on bottom mirror
 		const aliceX = cfg.mirrorWidth / 2 + lrMirrorBBoxDist + cfg.restingClockX - 40;
 		const aliceY = (cfg.restingClockY + (cfg.clockHeight / 2)) - (cfg.mirrorLineThickness / 2) - 1;
-		drawStickFigure(ctx, aliceX, aliceY, "Alice", "#00ff00");
+		drawStickFigure(ctx, aliceX, aliceY, "Alice", cfg.aliceColor);
 
 		// Bob: Moves with the moving clock
 		const bobX = pulseMoving.x - 40; // Offset so he's not inside the pulse
 		const bobY = (cfg.movingClockY + (cfg.clockHeight / 2)) - (cfg.mirrorLineThickness / 2) - 1;
-		drawStickFigure(ctx, bobX, bobY, "Bob", "#ffff00");
+		drawStickFigure(ctx, bobX, bobY, "Bob", cfg.bobColor);
 
 		// Draw the clocks for Alice and Bob:
 		ctx.font = "14px monospace";
-		ctx.fillStyle = "#ffffff";
 
 		// Alice's Watch
 		const aliceTime = getDisplayTime(pulseStatic.totalDist);
 		// ctx.fillText(`t = ${aliceTime.toFixed(2)}`, aliceX + 50, aliceY - 10);
+		ctx.fillStyle = timeDirty ? "rgba(128, 0, 0, 0.4)" : cfg.aliceTimeColor;
 		ctx.fillText(`${aliceTime.toFixed(2)}`, aliceX + 70, aliceY - 10);
 
 		// Bob's Watch
 		const bobTime = getDisplayTime(pulseMoving.totalDist);
 		// ctx.fillText(`t' = ${bobTime.toFixed(2)}`, bobX + 50, bobY - 10);
+		ctx.fillStyle = timeDirty ? "rgba(128, 0, 0 , 0.4)" : cfg.bobTimeColor;
 		ctx.fillText(`${bobTime.toFixed(2)}`, bobX + 70, bobY - 10);
 		ctx.restore();
 
@@ -887,15 +918,17 @@
 	vSlider.addEventListener('input', (e) => {
 		v = parseFloat(e.target.value);
 		vInput.value = v;
-		pulseMoving.path = [];
-		resetTimes();
+		// pulseMoving.path = [];
+		// resetTimes();
+		timeDirty = true;
 	});
 
 	// FORCE the value to stick when the mouse is released
 	vSlider.addEventListener('change', (e) => {
 		v = parseFloat(e.target.value);
 		vSlider.value = v; // Re-assert the value to the DOM element
-		resetTimes();
+		// resetTimes();
+		timeDirty = true;
 	});
 
 
@@ -911,7 +944,9 @@
 		// Werte synchronisieren
 		v = val;
 		vSlider.value = v;
-		pulseMoving.path = [];
+		// pulseMoving.path = [];
+		// resetTimes();
+		timeDirty = true;
 	});
 
 	/*
@@ -929,12 +964,14 @@
 	restartBtn.addEventListener('click', () => {
 		restartSimulation();
 		resetTimes();
+		timeDirty = false;
 	});
 
 	// resetBtn.addEventListener('click', resetCfg);
 	resetBtn.addEventListener('click', () => {
 		resetCfg();
 		resetTimes();
+		timeDirty = false;
 	});
 
 	audioBtn.addEventListener('click', () => {
@@ -964,7 +1001,8 @@
 	audioModeBtn.addEventListener('click', () => {
 		// Toggle 1 -> 2 -> 3 -> 1
 		audioMode = (audioMode % 3) + 1;
-		resetTimes();
+		// resetTimes();
+		timeDirty = true;
 
 		const labels = {
 			1: "Tick: BOT",
@@ -1140,13 +1178,28 @@
 					}
 				} else {
 					// Validate non-numerical keys (colors, draw modes)
-					if (key === 'traceColor') {
+					if (key === 'canvasBackgroundColor') {
+						if (!isValidColor(val)) { configErrorAry.push("Invalid color format.");
+						} else { tempCfg[key] = val; }
+					} else if (key === 'traceColor') {
 						if (!isValidColor(val)) { configErrorAry.push("Invalid color format.");
 						} else { tempCfg[key] = val; }
 					} else if (key === 'pulseColor') {
 						if (!isValidColor(val)) { configErrorAry.push("Invalid color format.");
 						} else { tempCfg[key] = val; }
 					} else if (key === 'mirrorColor') {
+						if (!isValidColor(val)) { configErrorAry.push("Invalid color format.");
+						} else { tempCfg[key] = val; }
+					} else if (key === 'aliceColor') {
+						if (!isValidColor(val)) { configErrorAry.push("Invalid color format.");
+						} else { tempCfg[key] = val; }
+					} else if (key === 'aliceTimeColor') {
+						if (!isValidColor(val)) { configErrorAry.push("Invalid color format.");
+						} else { tempCfg[key] = val; }
+					} else if (key === 'bobColor') {
+						if (!isValidColor(val)) { configErrorAry.push("Invalid color format.");
+						} else { tempCfg[key] = val; }
+					} else if (key === 'bobTimeColor') {
 						if (!isValidColor(val)) { configErrorAry.push("Invalid color format.");
 						} else { tempCfg[key] = val; }
 					} else if (key === 'pulseDrawMode') {
@@ -1169,7 +1222,7 @@
 			// SUCCESS: Apply the entire new config at once
 			cfg = tempCfg;
 			configError.innerText = "";
-			pulseMoving.path = [];
+			// pulseMoving.path = [];
 		}
 	}); // configArea.addEventListener()
 
